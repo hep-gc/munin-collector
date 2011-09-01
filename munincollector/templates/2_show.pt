@@ -1,0 +1,188 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:tal="http://xml.zope.org/namespaces/tal">
+
+<head>
+  <title>Munin-Collector Display Metrics</title>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+  <meta name="keywords" content="python web application" />
+  <meta name="description" content="pyramid web application" />
+  <link rel="shortcut icon" href="${request.static_url('munincollector:static/favicon.ico')}" />
+  <link rel="stylesheet" href="${request.static_url('munincollector:static/pylons.css')}" type="text/css" media="screen" charset="utf-8" />
+  <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen">
+  <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen">
+
+  <!--[if lte IE 6]>
+  <link rel="stylesheet" href="${request.static_url('munincollector:static/ie6.css')}" type="text/css" media="screen" charset="utf-8" />
+  <![endif]-->
+
+<script type="text/javascript">
+window.onload = function() {
+    CountCB();
+}
+
+function ToggleDisplay(id) {
+    var element;
+
+    element = document.getElementById(id);
+    if (element.style.display == '' || element.style.display == 'block')
+        element.style.display = 'none';
+    else
+        element.style.display = 'block';
+
+    return;
+}
+
+function CountCB(parent) {
+    var children, count, firstnode, i;
+
+    if (parent == null) {
+        firstnode=document.getElementById("resource-list");
+        count = CountCB(firstnode)
+        if (count == 1) {
+            document.getElementById("selected-resources").innerHTML = count + " selected resource.";
+            }
+        else {
+            document.getElementById("selected-resources").innerHTML = count + " selected resources.";
+            }
+        }
+    else {
+
+        count = 0;
+        if (parent.tagName == "INPUT" && parent.attributes[0].nodeValue == "checkbox") {
+            if (parent.checked == true) {
+                count = 1;
+                }
+            }
+
+        children = parent.childNodes;
+        for (i=0;i<children.length;i++) {
+            count += CountCB(children[i]);
+            }
+
+        return count;
+        }
+}
+
+function EnableDisable(id1,id2) {
+    if (document.getElementById(id1).disabled == true) 
+        document.getElementById(id1).disabled = false;
+    else
+        document.getElementById(id1).disabled = true;
+
+    if (id1 == id2 || document.getElementById(id1).disabled == true)
+        return;
+
+    document.getElementById(id2).disabled = true;
+    return;
+}
+</script>
+</head>
+
+
+<body>
+    <div id="middle" class="middle align-center">
+        <p class="app-welcome">
+            <span class="app-name">Munin-Collector:</span> An application to collect and present statistics.
+            <br/><br/>Sections and lists may be expanded or collapsed by clicking on the section suffix ("...") or element count ("(nn)").
+            <br/>${request.str_params}
+        </p>
+    </div><!--id="middle"-->
+
+    <div id="content" class="bottom">
+        <form id=selections>
+
+        <input type="hidden" name="mg" value="${Options['mg']['value']}" />
+
+        <h2 onclick="ToggleDisplay('graph-section');">Graphs...</h2>
+        <div id="graph-section">    
+            <br><p> Clicking on a graph does absolutely nothing. </p><br>
+        </div><!-- id="graph-section"-->
+
+        <h2 onclick="ToggleDisplay('select-section');">Select Resources...</h2>
+        <div id="select-section">    
+            <br><input type="submit" value="Show" /><span id=selected-resources>n selected resources.</span><br>
+
+            <br><p> Resources are nested at three levels: hosts, plugins, and multigraphs. Selecting a parent, selects all children. An "exclusive-or" is applied to parent/child selections. </p><br>
+
+            <ul id="resource-list" class="links">
+                <li tal:repeat="host (sorted(PluginConfigs['links']))">
+                    <input onclick="CountCB();" type="checkbox" value="" name=_${repeat.host.number} />
+                    <span tal:replace="host" />
+                    <span onclick="ToggleDisplay(${repeat.host.number});">
+                    (${len(PluginConfigs['links'][host])})
+                    </span>
+
+                    <div style="display:none" id=${repeat.host.number}>    
+                        <ul class="links">
+
+                            <li tal:repeat="plugin (sorted(PluginConfigs['links'][host]))">
+                                &nbsp; &nbsp; &nbsp;
+                                <input onclick="CountCB();" type="checkbox" value="" name=_${repeat.host.number}_${repeat.plugin.number} />
+                                ${plugin}
+                                <span onclick="ToggleDisplay(${repeat.host.number}${repeat.plugin.number});">
+                                (${len(PluginConfigs['config'][PluginConfigs['links'][host][plugin]])})
+                                </span>
+
+                                <div tal:condition="len(PluginConfigs['config'][PluginConfigs['links'][host][plugin]])>1">
+                                    <div style="display:none" id=${repeat.host.number}${repeat.plugin.number}>
+                                        <ul class="links">
+                                            <li tal:repeat="mgid (sorted(PluginConfigs['config'][PluginConfigs['links'][host][plugin]]))">
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                <input onclick="CountCB();" type="checkbox" value="" name=_${repeat.host.number}_${repeat.plugin.number}_${repeat.mgid.number} />
+                                                <span tal:replace="mgid" />
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                            </li>
+                        </ul>
+                    </div><!--id="test-section"-->    
+                    
+               </li>
+            </ul>
+        </div><!-- id="select-section"-->
+
+        <br>
+
+        <h2 onclick="ToggleDisplay('options-section');">Options...</h2>
+        <div style="display:none" id="options-section">    
+            <br><p> Enabled or disabled options by clicking on the corresponding option label.</p><br>
+
+             <div id="left">
+                <br><span onclick="EnableDisable('gt','gt');">Title</span>
+                <br><span onclick="EnableDisable('as','rs');">Absolute Start Time</span>
+                <br><span onclick="EnableDisable('rs','as');">Relative Start Time</span>
+                <br><span onclick="EnableDisable('tr','tr');">Time Range</span>
+                <br><span onclick="EnableDisable('ht','ht');">Height</span>
+                <br><span onclick="EnableDisable('wd','wd');">Width</span>
+                <br><span onclick="EnableDisable('fl','fl');">Label Font Size</span>
+                <br><span onclick="EnableDisable('fc','fc');">Comment Font Size</span>
+                <br><span onclick="EnableDisable('to','to');">Time Out</span>
+            </div>
+
+            <div id="right">
+                <br><input disabled="true" type="text" id="gt" name="gt" value="" size=32 />
+                <br><input disabled="true" type="text" id="as" name="as" value="x" size=16 />
+                <br><input disabled="true" type="text" id="rs" name="rs" value="-30" size=8 />
+                <br><input disabled="true" type="text" id="tr" name="tr" value="30" size=8 />
+                <br><input disabled="true" type="text" id="ht" name="ht" value="600" size=8 />
+                <br><input disabled="true" type="text" id="wd" name="wd" value="1200" size=8 />
+                <br><input disabled="true" type="text" id="fl" name="fl" value="8" size=8 />
+                <br><input disabled="true" type="text" id="fc" name="fc" value="8" size=8 />
+                <br><input disabled="true" type="text" id="to" name="to" value="300" size=8 />
+                <br><br><br><br>
+            </div>
+        </div><!-- id="options-section"-->
+
+        </form>
+    </div><!--id="content"-->
+
+    <br><br><br><br>
+
+    <div id="footer">
+        <div class="footer">&copy; Copyright 2011, University of Victoria.</div>
+    </div>
+</body>
+</html>
+

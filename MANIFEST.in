@@ -1,0 +1,2 @@
+include *.txt *.ini *.cfg *.rst *.wsgi 
+recursive-include munincollector *.py *.conf *.ico *.png *.css *.gif *.jpg *.pt *.pth *.txt *.mak *.mako *.js *.html *.xml
