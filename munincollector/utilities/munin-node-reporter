@@ -1,0 +1,131 @@
+#!/usr/bin/perl
+	use Digest::SHA1  qw(sha1 sha1_hex sha1_base64);
+	use URI::Escape;
+
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+
+    # Read the munin-node-reporter configuration file.
+    if (defined($ENV{'MUNIN_NODE_REPORTER_CONF'})) {
+        $ConfigurationFile = $ENV{'MUNIN_NODE_REPORTER_CONF'};
+        }
+    else {
+        $ConfigurationFile = '/etc/munin/munin-node-reporter.conf';
+        }
+
+    if (! -e $ConfigurationFile) {
+        print "Configuration file '$ConfigurationFile' does not exist.\n";
+        exit;
+    }
+
+    @config = `cat $ConfigurationFile`;
+    foreach $statement (@config) {
+        chop($statement);
+        next if $statement eq '' || substr($statement,0,1) eq '#';
+        if ($statement =~ /=/) {
+            ($key, $value) = split('=', $statement, 2);
+            $key = sprintf('\%%\(%s\)s', $key);
+            $value =~ s/^\s+//; $value =~ s/\s+$//;
+            $ConfigVar{$key} = $value;
+        } elsif ($statement =~ /:/) {
+            ($key, $value) = split(':', $statement, 2);
+            $value =~ s/^\s+//; $value =~ s/\s+$//;
+            $Config{$key} = $value;
+        }
+    }
+
+    foreach $opt_key (keys(%Config)) {
+        foreach $var_key (keys(%ConfigVar)) {
+            $Config{$opt_key} =~ s/$var_key/$ConfigVar{$var_key}/g;
+        }
+    }
+
+    # Read munin plugin configurations from the redis database and send them to the configured collector.
+	($hostname) = RedisCli('get hostname');
+	$host_uri = uri_escape($hostname);
+
+	@keys = RedisCli('keys "*"');
+	foreach $key (@keys) {
+	    next if $key !~ /^\+/;
+		$plugin_uri = uri_escape(substr($key, 8));
+		
+		($configuration) = RedisCli("get  $key");
+		$hash = unpack('H40', sha1($configuration));
+       
+		@configlines = split(/\\/, $configuration);
+		$count = 0;
+		$mgid_uri = $plugin_uri;
+		foreach $config (@configlines) {
+			if ($config =~ /^multigraph/) {
+				@x = split(/[\s\t\n]+/, $config); 
+				$mgid_uri = uri_escape($x[1]);
+			}
+		    $config_uri = uri_escape("$config"); 
+            # print ">>> host=$host_uri, plugin=$plugin_uri, hash=$hash, mgid=$mgid_uri, sequence=$count, data=$config_uri\n";
+			@x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$host_uri&plugin=$plugin_uri&hash=$hash&mgid=$mgid_uri&sequence=$count&data=$config_uri' 2>/dev/null`;
+			if ($x[0] ne "OK\n") {
+				print "Configure plugin=$plugin_uri, $x[0]";
+				last;
+			}
+			$count++;
+		}
+		print "Configure plugin=$plugin_uri, saved.\n" if $count > 0;
+	}
+
+    # Read munin statistics from the redis database and send them to the configured collector.
+	$count = 0; $count2 = 0; $last_time = time();
+	while(1) {
+		($plugin_data) = RedisCli("lindex $Config{'ReporterStackID'} 0");
+		@plugin_data = split(/\\/, $plugin_data);
+		($plugin, $time) = split(/[\s\t\n]+/, shift(@plugin_data));
+		last if $plugin eq '' || $plugin eq '(nil)';
+		if ($plugin ne '<no-more>') {
+			$plugin_uri = uri_escape($plugin);
+			$mgid_uri = $plugin_uri;
+			foreach $item (@plugin_data) {
+				next if length($item) < 1;
+				($key, $value) = split(/[\s\t\n]+/, $item);
+				if ($key eq 'multigraph') {
+					$mgid_uri = uri_escape($value);
+					next;
+				}
+				$key =~ s/\.value//;
+				$key_uri = uri_escape($key);
+				$value_uri = uri_escape($value);
+                # print ">>> host=$host_uri, plugin=$plugin_uri, mgid=$mgid_uri, time=$time, key=$key_uri, value=$value_uri\n";
+
+				@x = `curl -X PUT '$Config{'CollectorURL'}/value?host=$host_uri&plugin=$plugin_uri&mgid=$mgid_uri&time=$time&key=$key_uri&value=$value_uri' 2>/dev/null`;
+				next if $x[0] =~ /illegal attempt to update using time/;
+				if ($x[0] ne "OK\n") {
+					print "Saving plugin value=$plugin_uri, $x[0]";
+					exit;
+				}
+				$count2++;
+			}
+		}
+		@x = RedisCli("lpop $Config{'ReporterStackID'}");
+		$count++;
+		$current_time = time();
+		if ($current_time - $last_time > 60) {
+			print "Processed: Plugins=$count, Values=$count2\n";
+			$last_time = $current_time;
+		}
+#		last if $count > 9;
+	}
+
+	print "Processed: Plugins=$count, Values=$count2\n";
+
+#
+# Issue redis-cli command and deal with newlines or not (depends on redis-cli version - very inconsistenet).
+#
+sub RedisCli() {
+    my $ix;
+    my $redis_cmd = shift();
+    my @x = `redis-cli -h $Config{'ReporterIP'} $redis_cmd`;
+
+    for ($ix=0; $ix<=$#x; $ix++) {
+        $x[$ix] =~ s/\n$//;
+    }
+
+    return @x;
+}
+
