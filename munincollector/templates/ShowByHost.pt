@@ -60,7 +60,7 @@ window.onload = function() {
                             <tr tal:condition="repeat.graph.index%Options['gc']['value']==0"/>
                             <td>
                                 <span onclick="ToggleDisplay('graph-section');">${graph[0]}</span>
-                                <br/><img onclick="ToggleDisplay('graph-section');" src="${request.static_url('munincollector:static/munin/')}${graph[1]}"/>
+                                <br/><img onclick="ToggleDisplay('graph-section');" src="${request.host_url}/${graph[1]}"/>
                             </td>
                         </div>
                     </table>
