@@ -24,7 +24,7 @@ window.onload = function() {
     document.getElementById('ta').value = TimeConvert(document.getElementById('ta').value, 'date');
 
     if (document.getElementById("to").disabled == false && document.getElementById("to").value > 0) {
-        var timeout = setTimeout("document.getElementById('ShowByHostForm').submit()", document.getElementById("to").value * 1000);
+        var timeout = setTimeout("FormSubmit('TimeOut')", document.getElementById("to").value * 1000);
         }
 }
 </script>
