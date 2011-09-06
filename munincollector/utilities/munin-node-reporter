@@ -4,6 +4,13 @@
 
 	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
 
+    # Ensure only one munin-node-reporter task running.
+    @x = `ps --no-headers  -fC munin-node-reporter`;
+    if ($#x > 0) {
+        print "There is more than one munin-reporter-node running. This one is terminating.\n";
+        exit;
+    }
+
     # Read the munin-node-reporter configuration file.
     if (defined($ENV{'MUNIN_NODE_REPORTER_CONF'})) {
         $ConfigurationFile = $ENV{'MUNIN_NODE_REPORTER_CONF'};
