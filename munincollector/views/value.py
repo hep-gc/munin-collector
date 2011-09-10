@@ -1,6 +1,7 @@
 from pyramid.response import Response
 from subprocess import PIPE, Popen, STDOUT
 import os
+import re
 import lockfile
 import MCutils
 
@@ -16,7 +17,7 @@ class ReadValue(object):
             MCconfig['HostAllowed'][self.request.remote_addr] = MCutils.CheckAllowedDomains(MCconfig['AllowedDomains'], MCutils.IpToInt(self.request.remote_addr))
 
         if not MCconfig['HostAllowed'][self.request.remote_addr]:
-            return Response('munin-collector-value: (' + self.request.remote_addr + ') not authorized.\n')
+            return Response('munin-collector-value2: (' + self.request.remote_addr + ') not authorized.\n')
 
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
@@ -24,16 +25,14 @@ class ReadValue(object):
         if (Params.has_key('host') and
             Params.has_key('plugin') and
             Params.has_key('mgid') and
-            Params.has_key('time') and
             Params.has_key('key') and
-            Params.has_key('value')):
+            Params.has_key('values')):
 
             host = str(Params['host'])
             plugin = str(Params['plugin'])
             mgid = str(Params['mgid'])
-            time = str(Params['time'])
             key = str(Params['key'])
-            value = str(Params['value'])
+            values = str(Params['values'])
 
 
             if PluginConfigs['links'].has_key(host):
@@ -41,8 +40,8 @@ class ReadValue(object):
 
                 rrd_path = MCconfig['DataDir'] + '/' + host + '-' + mgid + '-' + key + MCutils.MuninType(PC, key) + '.rrd'
                 if not os.path.exists(rrd_path): 
-                    # create rrd file for plugin value.
-                    base_time = str(MCutils.StrToInt(time)-30)
+                    # create rrd file for plugin values.
+                    base_time = str(MCutils.StrToInt(values.split()[0].split(':')[0])-30)
 
                     if PC.has_key(key + '.type'):
                         data_type = PC[key + '.type'].strip()
@@ -72,17 +71,32 @@ class ReadValue(object):
                     stdout=PIPE, stderr=PIPE)
                     stdout, stderr = p.communicate()
                     if stderr != '':
-                        return Response('munin-collector-value: unable to create rrd file -' + data_source + ' ' + stderr)
+                        return Response('munin-collector-value2: unable to create rrd file -' + data_source + ' ' + stderr)
 
-                p = Popen(['rrdtool', 'update', rrd_path, '-t42', time + ':' + value], stdout=PIPE, stderr=PIPE)
+                value_list = values.split()
+                update_command = ['rrdtool', 'update', rrd_path, '-t42'] + value_list
+                p = Popen(update_command, stdout=PIPE, stderr=PIPE)
                 stdout, stderr = p.communicate()
                 if stderr != '':
-                    return Response('munin-collector-value: unable to update rrd file -' + stderr)
+                    pp = re.search(' illegal attempt to update using time ', stderr)
+                    while pp:
+                        value_list = value_list[1:]
+                        if len(value_list) < 1:
+                            stderr = ''
+                            break
+                        update_command = ['rrdtool', 'update', rrd_path, '-t42'] + value_list
+                        p = Popen(update_command, stdout=PIPE, stderr=PIPE)
+                        stdout, stderr = p.communicate()
+                        pp = re.search(' illegal attempt to update using time ', stderr)
+
+
+                if stderr != '':
+                    return Response('munin-collector-value2: unable to update rrd file -' + stderr)
 
                 return Response('OK\n')
 
             else:
-                return Response('munin-collector-value: unable to retrieve plugin configuration.\n')
+                return Response('munin-collector-value2: unable to retrieve plugin configuration.\n')
         else:
             missing = []
             if not Params.has_key('host'):
@@ -94,14 +108,11 @@ class ReadValue(object):
             if not Params.has_key('mgid'):
                 missing += ['mgid']
 
-            if not Params.has_key('time'):
-                missing += ['time']
-
             if not Params.has_key('key'):
                 missing += ['key']
 
-            if not Params.has_key('value'):
-                missing += ['value']
+            if not Params.has_key('values'):
+                missing += ['values']
 
-            return Response('munin-collector-value: the following required fields are missing: ' + str(missing) + '\n')
+            return Response('munin-collector-value2: the following required fields are missing: ' + str(missing) + '\n')
 
