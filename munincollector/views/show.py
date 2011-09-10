@@ -369,7 +369,7 @@ class DisplayMetrics(object):
                                     if PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid].has_key(ds + '.colour'):
                                         ds_colour = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid][ds + '.colour']
                                     else:
-                                        ds_colour = Palette[ds_ix]
+                                        ds_colour = Palette[ds_ix % len(Palette)]
 
                                     ds_label = ds
                                     if PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid].has_key(ds + '.label'):
