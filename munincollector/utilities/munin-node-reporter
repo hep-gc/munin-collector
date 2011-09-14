@@ -24,6 +24,7 @@
         exit;
     }
 
+    $Config{'ReporterIP'} = `hostname`; chop($Config{'ReporterIP'});
     $Config{'BlockSize'} = 100;
 
     @config = `cat $ConfigurationFile`;
@@ -50,7 +51,7 @@
 
     # Read munin plugin configurations from the redis database and send them to the configured collector.
 	($hostname) = RedisCli('get hostname');
-    if ($hostname !~ /[a-zA-Z0-9\.\_\-]/) {
+    if ($hostname =~ /[^a-zA-Z0-9\.\_\-]/) {
         print "Invalid hostname '$hostname', terminating.\n";
         exit;
     }
@@ -83,6 +84,14 @@
 		print "Configure plugin=$plugin, saved.\n" if $count > 0;
 	}
 
+	# Pause for up to 3 minutes before sending updates. Length of pause is inversely proportional to the number of items queued.
+	($stack_count) = RedisCli("llen $Config{'ReporterStackID'}");
+	if ($stack_count < 180) {
+		$seconds = 180 - ($stack_count * 1);
+		system("sleep $seconds");
+	}
+
+	# Send queued data to Munin-Collector server.
     $start_block_time = time(); $total_time = 0; $total_plugins = 0;
     while (1) {
         # Determine stack block size to process.
@@ -98,7 +107,7 @@
             ($plugin, $time) = split(/[\s\t\n]+/, shift(@plugin_data));
             next if $plugin eq '' || $plugin eq '(nil)' || $plugin eq '<no-more>';
 
-            if ($plugin !~ /[a-zA-Z0-9\.\_\-]/) {
+            if ($plugin =~ /[^a-zA-Z0-9\.\_\-]/) {
                 print "Skipping invalid plugin name '$plugin'.\n";
                 next;
             }
@@ -114,24 +123,26 @@
                         ($mgid, $x) = split(/\./, $value, 2);
                         $kprefix = $x.'_';
 
-			if ($kprefix !~ /[a-zA-Z0-9\.\_\-]/) {
-			    print "Skipping invalid multigraph key prefix '$kprefix'.\n";
-			    next;
-			}
+                        if ($kprefix =~ /[^a-zA-Z0-9\.\_\-]/) {
+                            print "Skipping invalid multigraph key prefix '$kprefix'.\n";
+                            next;
+                        }
                     } else {
-		        $mgid = $value;
+                        $mgid = $value;
                         $kprefix = '';
                     }
                     next;
+                } else {
+                    $kprefix = '';
                 }
 
-                if ($mgid !~ /[a-zA-Z0-9\.\_\-]/) {
+                if ($mgid =~ /[^a-zA-Z0-9\.\_\-]/) {
                     print "Skipping invalid mgid name '$mgid'.\n";
                     next;
                 }
 
                 $key =~ s/\.value//;
-                if ($key !~ /[a-zA-Z0-9\.\_\-]/) {
+                if ($key =~ /[^a-zA-Z0-9\.\_\-]/) {
                     print "Skipping invalid key name '$key'.\n";
                     next;
                 }

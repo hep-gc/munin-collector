@@ -17,7 +17,7 @@ class ReadValue(object):
             MCconfig['HostAllowed'][self.request.remote_addr] = MCutils.CheckAllowedDomains(MCconfig['AllowedDomains'], MCutils.IpToInt(self.request.remote_addr))
 
         if not MCconfig['HostAllowed'][self.request.remote_addr]:
-            return Response('munin-collector-value2: (' + self.request.remote_addr + ') not authorized.\n')
+            return Response('munin-collector-value: (' + self.request.remote_addr + ') not authorized.\n')
 
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
@@ -37,6 +37,12 @@ class ReadValue(object):
 
             if PluginConfigs['links'].has_key(host):
                 PC = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid]
+
+                lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
+                try:
+                    lock.acquire(timeout=840)
+                except:
+                    return Response('munin-collector-value: unable to obtain value update file lock.\n')
 
                 rrd_path = MCconfig['DataDir'] + '/' + host + '-' + mgid + '-' + key + MCutils.MuninType(PC, key) + '.rrd'
                 if not os.path.exists(rrd_path): 
@@ -71,7 +77,8 @@ class ReadValue(object):
                     stdout=PIPE, stderr=PIPE)
                     stdout, stderr = p.communicate()
                     if stderr != '':
-                        return Response('munin-collector-value2: unable to create rrd file -' + data_source + ' ' + stderr)
+                        lock.release()
+                        return Response('munin-collector-value: unable to create rrd file -' + data_source + ' ' + stderr)
 
                 value_list = values.split()
                 update_command = ['rrdtool', 'update', rrd_path, '-t42'] + value_list
@@ -91,12 +98,14 @@ class ReadValue(object):
 
 
                 if stderr != '':
-                    return Response('munin-collector-value2: unable to update rrd file -' + stderr)
+                    lock.release()
+                    return Response('munin-collector-value: unable to update rrd file -' + stderr)
 
+                lock.release()
                 return Response('OK\n')
 
             else:
-                return Response('munin-collector-value2: unable to retrieve plugin configuration.\n')
+                return Response('munin-collector-value: unable to retrieve plugin configuration.\n')
         else:
             missing = []
             if not Params.has_key('host'):
@@ -114,5 +123,5 @@ class ReadValue(object):
             if not Params.has_key('values'):
                 missing += ['values']
 
-            return Response('munin-collector-value2: the following required fields are missing: ' + str(missing) + '\n')
+            return Response('munin-collector-value: the following required fields are missing: ' + str(missing) + '\n')
 

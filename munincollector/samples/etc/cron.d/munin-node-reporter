@@ -1,0 +1,7 @@
+#
+# cron-job for munin-node-reporter
+#
+
+MAILTO=root
+
+4,9,14,19,24,29,34,39,44,49,54,59 * * * *     root test -x /usr/sbin/munin-node-reporter && /usr/sbin/munin-node-reporter
