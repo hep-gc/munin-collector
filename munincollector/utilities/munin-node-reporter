@@ -90,10 +90,12 @@
 		print "Configure plugin=$plugin, saved.\n" if $count > 0;
 	}
 
-	# Pause for up to 3 minutes before sending updates. Length of pause is inversely proportional to the number of items queued.
+	# Pause for up to 60 seconds before sending updates. Length of pause is inversely proportional to the number of items queued.
 	($stack_count) = RedisCli("llen $Config{'ReporterStackID'}");
-	if ($stack_count < 180) {
-		$seconds = 180 - ($stack_count * 1);
+    $pause_adjustment = int($stack_count/10);
+	if ($pause_adjustment < 60) {
+		$seconds = 60 - $pause_adjustment;
+        print "Sleeping for $seconds seconds.\n";
 		system("sleep $seconds");
 	}
 

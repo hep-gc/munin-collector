@@ -47,7 +47,7 @@ class ReadValue(object):
 
                 lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
                 try:
-                    lock.acquire(timeout=840)
+                    lock.acquire(timeout=180)
                 except:
                     return Response('munin-collector-value: unable to obtain value update file lock.\n')
 
