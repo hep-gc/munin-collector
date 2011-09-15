@@ -72,11 +72,13 @@
 				@x = split(/[\s\t\n]+/, $config); 
 				$mgid = $x[1];
 			}
-		    $config_uri = uri_escape("$config"); 
-            # print ">>> host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri\n";
+
+			$config_uri = uri_escape("$config"); 
 			@x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$hostname&plugin=$plugin&hash=$hash&mgid=$mgid&sequence=$count&data=$config_uri' 2>/dev/null`;
 			if ($x[0] ne "OK\n") {
-				print "Configure plugin=$plugin, $x[0]";
+				chop($x[0]);
+				print "Error saving plugin config: $x[0]\n";
+				print "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri\n";
 				last;
 			}
 			$count++;
@@ -165,7 +167,7 @@
     				@x = `curl -X PUT '$Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values_uri' 2>/dev/null`;
     				if ($x[0] ne "OK\n") {
     					chop($x[0]);
-    					print "Error saving plugin values - $x[0]\n";
+    					print "Error saving plugin values: $x[0]\n";
     					print "Command was: curl -X PUT $Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values\n";
     					exit;
     				}

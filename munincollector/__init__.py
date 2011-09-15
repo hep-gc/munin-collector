@@ -4,6 +4,7 @@ from subprocess import PIPE, Popen, STDOUT
 import ConfigParser
 import MCutils
 import os
+import re
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -211,6 +212,12 @@ def main(global_config, **settings):
 
                 if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
                     mgid = key_value[1]
+                    pp = re.search('\.', mgid)
+                    if pp:
+                        [mgid, kprefix] = mgid.split('.', 1)
+                        kprefix = kprefix + '_'
+                    else:
+                        kprefix = ''
                     continue
 
                 if not PluginConfigs['config'].has_key(hash):
@@ -219,19 +226,20 @@ def main(global_config, **settings):
                 if not PluginConfigs['config'][hash].has_key(mgid):
                     PluginConfigs['config'][hash][mgid] = {}
 
-                PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+                PluginConfigs['config'][hash][mgid][kprefix + key_value[0]] = key_value[1]
 
                 # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
                 words = key_value[0].split(".")
                 if len(words) == 2:
+                    ds = kprefix + words[0]
                     if not PluginConfigs['datasource'].has_key(hash):
                         PluginConfigs['datasource'][hash] = {}
 
                     if not PluginConfigs['datasource'][hash].has_key(mgid):
                         PluginConfigs['datasource'][hash][mgid] = []
 
-                    if not words[0] in PluginConfigs['datasource'][hash][mgid]:
-                        PluginConfigs['datasource'][hash][mgid] += [words[0]]
+                    if not ds in PluginConfigs['datasource'][hash][mgid]:
+                        PluginConfigs['datasource'][hash][mgid] += [ds]
 
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})

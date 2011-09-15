@@ -1,6 +1,7 @@
 from pyramid.response import Response
 from subprocess import PIPE, Popen, STDOUT
 import os
+import re
 import lockfile
 import MCutils
 
@@ -92,6 +93,13 @@ class ReadConfig(object):
 
                 # Set config variable.
                 if (data.strip() != '' and data.split(' ', 1)[0] != 'multigraph'):
+		    pp = re.search('\.', mgid)
+                    if pp:
+                        [mgid, kprefix] = mgid.split('.', 1)
+                        kprefix = kprefix + '_'
+                    else:
+                        kprefix =  ''
+
                     if not PluginConfigs['config'].has_key(hash):
                         PluginConfigs['config'][hash] = {}
                                          
@@ -99,19 +107,20 @@ class ReadConfig(object):
                         PluginConfigs['config'][hash][mgid] = {}
                                          
                     key_value = data.split(' ', 1)
-                    PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+                    PluginConfigs['config'][hash][mgid][kprefix + key_value[0]] = key_value[1]
 
                     # Update datasource variable: PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
                     words = key_value[0].split('.')
                     if len(words) == 2:
+                        ds = kprefix + words[0]
                         if not PluginConfigs['datasource'].has_key(hash):
                             PluginConfigs['datasource'][hash] = {}
                                              
                         if not PluginConfigs['datasource'][hash].has_key(mgid):
                             PluginConfigs['datasource'][hash][mgid] = []
                                              
-                        if not words[0] in PluginConfigs['datasource'][hash][mgid]:
-                            PluginConfigs['datasource'][hash][mgid] += [words[0]]
+                        if not ds in PluginConfigs['datasource'][hash][mgid]:
+                            PluginConfigs['datasource'][hash][mgid] += [ds]
 
                 return Response('OK\n')
             else:
