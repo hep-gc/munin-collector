@@ -35,7 +35,14 @@ class ReadValue(object):
             values = str(Params['values'])
 
 
-            if PluginConfigs['links'].has_key(host):
+            # PluginConfigs['links'][<host>][<plugin>] = <hash>
+            # PluginConfigs['config'][<hash>][<mgid>][<key>] = <value>
+            # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
+            if (PluginConfigs['links'].has_key(host) and
+                PluginConfigs['links'][host].has_key(plugin) and
+                PluginConfigs['config'][PluginConfigs['links'][host][plugin]].has_key(mgid) and
+                key in PluginConfigs['datasource'][PluginConfigs['links'][host][plugin]][mgid]):
+
                 PC = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid]
 
                 lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
@@ -105,7 +112,7 @@ class ReadValue(object):
                 return Response('OK\n')
 
             else:
-                return Response('munin-collector-value: unable to retrieve plugin configuration.\n')
+                return Response('munin-collector-value: bad input keys.\n')
         else:
             missing = []
             if not Params.has_key('host'):

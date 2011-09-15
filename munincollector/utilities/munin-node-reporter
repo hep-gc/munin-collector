@@ -77,8 +77,12 @@
 			@x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$hostname&plugin=$plugin&hash=$hash&mgid=$mgid&sequence=$count&data=$config_uri' 2>/dev/null`;
 			if ($x[0] ne "OK\n") {
 				chop($x[0]);
-				print "Error saving plugin config: $x[0]\n";
-				print "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri\n";
+                if ($x[0] ne "config already saved.\n") {
+                    print "Plugin '$plugin' config already saved.\n";
+                } else {
+                    print "Error saving plugin config: $x[0]\n";
+                    print "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri\n";
+                }
 				last;
 			}
 			$count++;
@@ -109,14 +113,9 @@
             ($plugin, $time) = split(/[\s\t\n]+/, shift(@plugin_data));
             next if $plugin eq '' || $plugin eq '(nil)' || $plugin eq '<no-more>';
 
-            if ($plugin =~ /[^a-zA-Z0-9\.\_\-]/) {
-                print "Skipping invalid plugin name '$plugin'.\n";
-                next;
-            }
-
             $time = $time * 1;
 
-	    $mgid = $plugin;
+            $mgid = $plugin; $kprefix = '';
             foreach $item (@plugin_data) {
                 next if length($item) < 1;
                 ($key, $value) = split(/[\s\t\n]+/, $item);
@@ -124,30 +123,14 @@
                     if ($value =~ /\./) {
                         ($mgid, $x) = split(/\./, $value, 2);
                         $kprefix = $x.'_';
-
-                        if ($kprefix =~ /[^a-zA-Z0-9\.\_\-]/) {
-                            print "Skipping invalid multigraph key prefix '$kprefix'.\n";
-                            next;
-                        }
                     } else {
                         $mgid = $value;
                         $kprefix = '';
                     }
                     next;
-                } else {
-                    $kprefix = '';
-                }
-
-                if ($mgid =~ /[^a-zA-Z0-9\.\_\-]/) {
-                    print "Skipping invalid mgid name '$mgid'.\n";
-                    next;
                 }
 
                 $key =~ s/\.value//;
-                if ($key =~ /[^a-zA-Z0-9\.\_\-]/) {
-                    print "Skipping invalid key name '$key'.\n";
-                    next;
-                }
 
                 $value = $value * 1;
                 $Queue{$plugin}{$mgid}{$kprefix.$key}{$time} = $value;
@@ -169,7 +152,11 @@
     					chop($x[0]);
     					print "Error saving plugin values: $x[0]\n";
     					print "Command was: curl -X PUT $Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values\n";
-    					exit;
+                        if ($x[0] eq "munin-collector-value: bad input keys.") {
+                            next;
+                        } else {
+                            exit;
+                        }
     				}
                 }
             }
