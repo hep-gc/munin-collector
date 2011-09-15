@@ -51,7 +51,7 @@ window.onload = function() {
                 <div tal:condition="Options['if']['value']=='CSV'">
                     <div tal:repeat="csv Selections">
                         &nbsp; &nbsp; &nbsp;
-                        <a href="${request.static_url('munincollector:static/munin/')}${csv[1]}">${csv[0]}</a>
+                        <a href="${request.host_url}/${csv[1]}">${csv[0]}</a>
                     </div>
                 </div>
                 <div tal:condition="Options['if']['value']!='CSV'">
