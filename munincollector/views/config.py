@@ -93,7 +93,7 @@ class ReadConfig(object):
 
                 # Set config variable.
                 if (data.strip() != '' and data.split(' ', 1)[0] != 'multigraph'):
-		    pp = re.search('\.', mgid)
+                    pp = re.search('\.', mgid)
                     if pp:
                         [mgid, kprefix] = mgid.split('.', 1)
                         kprefix = kprefix + '_'

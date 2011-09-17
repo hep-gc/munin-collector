@@ -66,10 +66,10 @@ class DisplayMetrics(object):
             'to': {'type': 'int', 'disabled': 'disabled', 'value': 300, 'min': 10, 'max': 3600},
 
             # Graph height
-            'ht': {'type': 'int', 'disabled': 'disabled', 'value': 400, 'min': 100, 'max': 2400},
+            'ht': {'type': 'int', 'disabled': 'disabled', 'value': 100, 'min': 100, 'max': 2400},
 
             # Graph width
-            'wd': {'type': 'int', 'disabled': 'disabled', 'value': 800, 'min': 100, 'max': 2400},
+            'wd': {'type': 'int', 'disabled': 'disabled', 'value': 300, 'min': 100, 'max': 2400},
 
             # Title font size
             'ft': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 6, 'max': 32},
@@ -81,10 +81,10 @@ class DisplayMetrics(object):
             'fv': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 6, 'max': 32},
 
             # Statistics (LEGEND) font size
-            'fs': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 0, 'max': 32},
+            'fs': {'type': 'int', 'disabled': 'disabled', 'value': 0, 'min': 0, 'max': 32},
 
             # Graph columns
-            'gc': {'type': 'int', 'disabled': 'disabled', 'value': 1, 'min': 1, 'max': 24},
+            'gc': {'type': 'int', 'disabled': 'disabled', 'value': 2, 'min': 1, 'max': 24},
 
             # Graph title
             'gt': {'type': 'str', 'disabled': 'disabled', 'value': ''},
