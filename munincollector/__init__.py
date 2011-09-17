@@ -175,7 +175,8 @@ def main(global_config, **settings):
             if not PluginConfigs['hostdomains'].has_key(domain):
                 PluginConfigs['hostdomains'][domain] = []
 
-            PluginConfigs['hostdomains'][domain] += [host]
+            if not host in PluginConfigs['hostdomains'][domain]:
+                PluginConfigs['hostdomains'][domain] += [host]
 
             p = Popen(['ls', '-l', PluginDir + '/links/' + host], stdout=PIPE, stderr=PIPE)
             links, stderr = p.communicate()

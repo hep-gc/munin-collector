@@ -50,7 +50,8 @@ class ReadConfig(object):
                     if not PluginConfigs['hostdomains'].has_key(domain):
                         PluginConfigs['hostdomains'][domain] = []
 
-                    PluginConfigs['hostdomains'][domain] += [host]
+                    if not host in PluginConfigs['hostdomains'][domain]:
+                        PluginConfigs['hostdomains'][domain] += [host]
 
                     # Set link variable.
                     if not PluginConfigs['links'].has_key(host):
