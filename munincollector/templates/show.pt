@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="${request.static_url('munincollector:static/pylons.css')}" type="text/css" media="screen" charset="utf-8" />
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen">
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen">
-    <script type="text/javascript" src="${request.static_url('munincollector:static/ShowByHost.js')}"></script>
+    <script type="text/javascript" src="${request.static_url('munincollector:static/show.js')}"></script>
 
     <!--[if lte IE 6]>
     <link rel="stylesheet" href="${request.static_url('munincollector:static/ie6.css')}" type="text/css" media="screen" charset="utf-8" />
