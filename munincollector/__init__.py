@@ -169,15 +169,6 @@ def main(global_config, **settings):
         hosts = hosts.splitlines()
 
         for host in hosts:
-            words = host.split('.')
-            del words[0]
-            domain = '.'.join(words)
-            if not PluginConfigs['hostdomains'].has_key(domain):
-                PluginConfigs['hostdomains'][domain] = []
-
-            if not host in PluginConfigs['hostdomains'][domain]:
-                PluginConfigs['hostdomains'][domain] += [host]
-
             p = Popen(['ls', '-l', PluginDir + '/links/' + host], stdout=PIPE, stderr=PIPE)
             links, stderr = p.communicate()
             if stderr == '':
@@ -242,12 +233,44 @@ def main(global_config, **settings):
                     if not ds in PluginConfigs['datasource'][hash][mgid]:
                         PluginConfigs['datasource'][hash][mgid] += [ds]
 
+    # Build domain and plugin trees used for graph selection (stage 3).
+    PluginConfigs['DomainTree'] = {}
+    PluginConfigs['PluginTree'] = {}
+    for host in PluginConfigs['links']:
+        domain = MCutils.GetDomain(host)
+        for plugin in PluginConfigs['links'][host]:
+            for mgid in PluginConfigs['config'][PluginConfigs['links'][host][plugin]]:
+                if not PluginConfigs['DomainTree'].has_key(domain):
+                    PluginConfigs['DomainTree'][domain] = {}
+
+                if not PluginConfigs['DomainTree'][domain].has_key(host):
+                    PluginConfigs['DomainTree'][domain][host] = {}
+
+                if not PluginConfigs['DomainTree'][domain][host].has_key(plugin):
+                    PluginConfigs['DomainTree'][domain][host][plugin] = []
+
+                if not mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
+                    PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+
+                if not PluginConfigs['PluginTree'].has_key(plugin):
+                    PluginConfigs['PluginTree'][plugin] = {}
+
+                if not PluginConfigs['PluginTree'][plugin].has_key(mgid):
+                    PluginConfigs['PluginTree'][plugin][mgid] = {}
+
+                if not PluginConfigs['PluginTree'][plugin][mgid].has_key(domain):
+                    PluginConfigs['PluginTree'][plugin][mgid][domain] = []
+
+                if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
+                    PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
+
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})
     config.add_settings({'PluginConfigs': PluginConfigs})
     config.add_view('munincollector.views.show.DisplayMetrics')
     config.add_view('munincollector.views.config.ReadConfig', name='config')
     config.add_view('munincollector.views.value.ReadValue', name='value')
+    config.add_view('munincollector.views.debug.ShowValues', name='debug')
 #    config.add_view('munincollector.views.show.DisplayMetrics',
 #                    context='munincollector:resources.Root',
 #                    renderer='munincollector:templates/show.pt')

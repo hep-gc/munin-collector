@@ -43,15 +43,30 @@ class ReadConfig(object):
             stdout, stderr = p.communicate()
             if stderr == '':
                 if sequence < 1:
-                    # Save host's domain.
-                    words = host.split('.')
-                    del words[0]
-                    domain = '.'.join(words)
-                    if not PluginConfigs['hostdomains'].has_key(domain):
-                        PluginConfigs['hostdomains'][domain] = []
+                    # Update the domain and plugin trees used for graph selection.
+                    if not PluginConfigs['DomainTree'].has_key(domain):
+                        PluginConfigs['DomainTree'][domain] = {}
 
-                    if not host in PluginConfigs['hostdomains'][domain]:
-                        PluginConfigs['hostdomains'][domain] += [host]
+                    if not PluginConfigs['DomainTree'][domain].has_key(host):
+                        PluginConfigs['DomainTree'][domain][host] = {}
+
+                    if not PluginConfigs['DomainTree'][domain][host].has_key(plugin):
+                        PluginConfigs['DomainTree'][domain][host][plugin] = []
+
+                    if not mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
+                        PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+
+                    if not PluginConfigs['PluginTree'].has_key(plugin):
+                        PluginConfigs['PluginTree'][plugin] = {}
+
+                    if not PluginConfigs['PluginTree'][plugin].has_key(mgid):
+                        PluginConfigs['PluginTree'][plugin][mgid] = {}
+
+                    if not PluginConfigs['PluginTree'][plugin][mgid].has_key(domain):
+                        PluginConfigs['PluginTree'][plugin][mgid][domain] = []
+
+                    if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
+                        PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
 
                     # Set link variable.
                     if not PluginConfigs['links'].has_key(host):

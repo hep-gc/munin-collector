@@ -19,6 +19,12 @@ def CheckAllowedDomains( AllowedDomains, HostAddr ):
             return True
     return False
 
+# Return the domain from the specified full host name.
+def GetDomain( host ):
+    words = host.split('.')
+    del words[0]
+    return '.'.join(words)
+
 # Convert the given IP string to an integer.
 def IpToInt( Ip ):
     if ':' in Ip:
