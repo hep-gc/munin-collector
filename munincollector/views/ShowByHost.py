@@ -413,7 +413,7 @@ class DisplayMetrics(object):
                             Selections += [(graph_heading + stderr, graph_path)]
                             # End of Graph Generation.
 
-        return render_to_response('munincollector:templates/show.pt', {
+        return render_to_response('munincollector:templates/ShowByHost.pt', {
             'request': self.request,
             'PluginConfigs': PluginConfigs,
             'Selections': Selections,
