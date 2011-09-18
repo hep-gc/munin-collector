@@ -233,9 +233,13 @@ def main(global_config, **settings):
                     if not ds in PluginConfigs['datasource'][hash][mgid]:
                         PluginConfigs['datasource'][hash][mgid] += [ds]
 
-    # Build domain and plugin trees used for graph selection (stage 3).
+    # Build domain and plugin trees and cross references used for graph selection (stage 3).
     PluginConfigs['DomainTree'] = {}
     PluginConfigs['PluginTree'] = {}
+    PluginConfigs['DomainXref'] = {}
+    PluginConfigs['HostXref'] = {}
+    PluginConfigs['PluginXref'] = {}
+    PluginConfigs['MgidXref'] = {}
     for host in PluginConfigs['links']:
         domain = MCutils.GetDomain(host)
         for plugin in PluginConfigs['links'][host]:
@@ -263,6 +267,18 @@ def main(global_config, **settings):
 
                 if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
                     PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
+
+                if not PluginConfigs['DomainXref'].has_key(domain): 
+                    PluginConfigs['DomainXref'][domain] = 1 + len(PluginConfigs['DomainXref'].keys())
+
+                if not PluginConfigs['HostXref'].has_key(host): 
+                    PluginConfigs['HostXref'][host] = 1 + len(PluginConfigs['HostXref'].keys())
+
+                if not PluginConfigs['PluginXref'].has_key(plugin): 
+                    PluginConfigs['PluginXref'][plugin] = 1 + len(PluginConfigs['PluginXref'].keys())
+
+                if not PluginConfigs['MgidXref'].has_key(mgid): 
+                    PluginConfigs['MgidXref'][mgid] = 1 + len(PluginConfigs['MgidXref'].keys())
 
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})

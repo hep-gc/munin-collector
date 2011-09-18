@@ -15,5 +15,5 @@ class ShowValues(object):
         MCconfig = self.request.registry.settings['MCconfig']
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
-        return Response('debug: ' + str(PluginConfigs['DomainTree']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['PluginTree']) + '\n')
+        return Response('debug: ' + str(PluginConfigs['DomainTree']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['PluginTree']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['DomainXref']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['HostXref']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['PluginXref']) + '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>' + str(PluginConfigs['MgidXref']) + '\n')
 
