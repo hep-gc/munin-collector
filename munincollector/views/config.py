@@ -68,17 +68,17 @@ class ReadConfig(object):
                     if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
                         PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
 
-                    if not PluginConfigs['DomainXref'].has_key(domain): 
-                        PluginConfigs['DomainXref'][domain] = 1 + len(PluginConfigs['DomainXref'].keys())
+                    if not domain in PluginConfigs['DomainXref']:
+                        PluginConfigs['DomainXref'] += [domain]
 
-                    if not PluginConfigs['HostXref'].has_key(host): 
-                        PluginConfigs['HostXref'][host] = 1 + len(PluginConfigs['HostXref'].keys())
+                    if not host in PluginConfigs['HostXref']:
+                        PluginConfigs['HostXref'] += [host]
 
-                    if not PluginConfigs['PluginXref'].has_key(plugin): 
-                        PluginConfigs['PluginXref'][plugin] = 1 + len(PluginConfigs['PluginXref'].keys())
+                    if not plugin in PluginConfigs['PluginXref']:
+                        PluginConfigs['PluginXref'] += [plugin]
 
-                    if not PluginConfigs['MgidXref'].has_key(mgid): 
-                        PluginConfigs['MgidXref'][mgid] = 1 + len(PluginConfigs['MgidXref'].keys())
+                    if not mgid in PluginConfigs['MgidXref']:
+                        PluginConfigs['MgidXref'] += [mgid]
 
                     # Set link variable.
                     if not PluginConfigs['links'].has_key(host):
