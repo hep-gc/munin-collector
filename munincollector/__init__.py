@@ -236,7 +236,7 @@ def main(global_config, **settings):
     # Build domain and plugin trees and cross references used for graph selection (stage 3).
     PluginConfigs['DomainTree'] = {}
     PluginConfigs['PluginTree'] = {}
-    PluginConfigs['DomainXref'] = {}
+    PluginConfigs['DomainXref'] = []
     PluginConfigs['HostXref'] = []
     PluginConfigs['PluginXref'] = []
     PluginConfigs['MgidXref'] = []
