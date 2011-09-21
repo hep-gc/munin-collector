@@ -69,84 +69,257 @@ window.onload = function() {
 
             <h2>Make Selections:</h2>
 
-            <input id="B1" onclick="SetH2();" type="button" value="Change Order"/>
+            <input id="B1" onclick="ChangeOrder();" type="button" value="Change Order"/>
             <input id="B2" onclick="FormReset();" type="button" value="Reset Selections"/>
             <input id="B3" type="submit" value="Refresh selected resources (n)"/>
 
-            <div id="select-section">    
-                <span onclick="ToggleDisplay('AllHosts');">
-                    All Hosts
-                    (${len(PluginConfigs['links'])})
-                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                </span>
+            <div id="SelectionSection">    
+                <div id="OrderByPlugin">    
+                    <span onclick="ToggleDisplay('AllPlugins');">
+                        All Plugins
+                        (${len(PT.keys())})
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                    </span>
 
-                <div style="display:none" id="AllHosts">
-                    <ul class="links">
-                        <li tal:repeat="host (sorted(PluginConfigs['links']))">
-                            &nbsp; &nbsp; &nbsp;
-                            <input onclick="ToggleChildCBs('${repeat.host.number}');" id="${repeat.host.number}" type="checkbox" />
-                            <span onclick="ToggleDisplay('d${repeat.host.number}');">
-                                ${host}
-                                <span tal:condition="len(PluginConfigs['links'][host])>1">(${len(PluginConfigs['links'][host])})</span>
-                            </span>
-                            <span onclick="ToggleDisplay('AllHosts');">
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                            </span>
+                    <div style="display:none" id="AllPlugins">
+                        <ul class="links">
+                            <li tal:repeat="plugin (sorted(PT.keys()))">
+                                &nbsp; &nbsp; &nbsp;
+                                <input onclick="ToggleChildCBs('${PX.index(plugin)}');" id="${PX.index(plugin)}" type="checkbox" />
+                                <span onclick="ToggleDisplay('s${PX.index(plugin)}');">
+                                    ${plugin}
+                                    <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid plugin">(${len(PT[plugin][mgid].keys())})</span>
+                                    <span tal:condition="len(PT[plugin].keys())>1">(${len(PT[plugin].keys())})</span>
+                                </span>
+                                <span onclick="ToggleDisplay('AllPlugins');">
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                </span>
 
-                                <div style="display:none" id="d${repeat.host.number}">    
-                                    <ul class="links">
+                                    <div tal:condition="len(PT[plugin].keys())<2">
+                                        <div tal:define="mgid plugin" style="display:none" id="s${PX.index(plugin)}">    
+                                            <ul class="links">
+                                                <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
+                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                        ${domain}
+                                                        (${len(PT[plugin][mgid][domain])})
+                                                    </span>
+                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    </span>
 
-                                        <li tal:repeat="plugin (sorted(PluginConfigs['links'][host]))">
-                                            &nbsp; &nbsp; &nbsp;
-                                            &nbsp; &nbsp; &nbsp;
-                                            <input onclick="ToggleChildCBs('${repeat.host.number}.${repeat.plugin.number}');" id="${repeat.host.number}.${repeat.plugin.number}" type="checkbox" />
-                                            <span onclick="ToggleDisplay('d${repeat.host.number}.${repeat.plugin.number}');">
-                                                ${plugin}
-                                                <span tal:condition="len(PluginConfigs['config'][PluginConfigs['links'][host][plugin]])>1">(${len(PluginConfigs['config'][PluginConfigs['links'][host][plugin]])})</span>
-                                            </span>
-                                            <span onclick="ToggleDisplay('AllHosts');">
-                                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                            </span>
+                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
+                                                            <ul class="links">
+                                                                <li tal:repeat="host (sorted(PT[plugin][mgid][domain]))">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                        ${host}
+                                                                    </span>
+                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    </span>
 
-                                                <div tal:condition="len(PluginConfigs['config'][PluginConfigs['links'][host][plugin]])>1">
-                                                    <div style="display:none" id="d${repeat.host.number}.${repeat.plugin.number}">
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div tal:condition="len(PT[plugin].keys())>1">
+                                        <div style="display:none" id="s${PX.index(plugin)}">    
+                                            <ul class="links">
+                                                <li tal:repeat="mgid (sorted(PT[plugin].keys()))">
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}');" id="${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}');">
+                                                        ${mgid}
+                                                        (${len(PT[plugin][mgid].keys())})
+                                                    </span>
+                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    </span>
+
+                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}">    
+                                                            <ul class="links">
+                                                                <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
+                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                        ${domain}
+                                                                        (${len(PT[plugin][mgid][domain])})
+                                                                    </span>
+                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    </span>
+
+                                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
+                                                                            <ul class="links">
+                                                                                <li tal:repeat="host (sorted(PT[plugin][mgid][domain]))">
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                                        ${host}
+                                                                                    </span>
+                                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    </span>
+
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
+
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                
+                           </li>
+                        </ul>
+                    </div><!-- id="AllPlugins" -->
+                </div><!-- id="OrderByPlugin" -->
+
+                <div style="display:none" id="OrderByDomain">    
+                    <span onclick="ToggleDisplay('AllDomains');">
+                        All Domains
+                        (${len(DT.keys())})
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                    </span>
+
+                    <div style="display:none" id="AllDomains">
+                        <ul class="links">
+                            <li tal:repeat="domain (sorted(DT.keys()))">
+                                &nbsp; &nbsp; &nbsp;
+                                <input onclick="ToggleChildCBs('x${DX.index(domain)}');" id="x${DX.index(domain)}" type="checkbox" />
+                                <span onclick="ToggleDisplay('sx${DX.index(domain)}');">
+                                    ${domain}
+                                    (${len(DT[domain].keys())})
+                                </span>
+                                <span onclick="ToggleDisplay('AllDomains');">
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                </span>
+
+                                    <div style="display:none" id="sx${DX.index(domain)}">    
+                                        <ul class="links">
+                                            <li tal:repeat="host sorted(DT[domain].keys())">
+                                                &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp;
+                                                <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}');" id="x${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
+                                                    ${host}
+                                                    (${len(DT[domain][host].keys())})
+                                                </span>
+                                                <span onclick="ToggleDisplay('AllDomains');">
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                </span>
+
+                                                    <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}">    
                                                         <ul class="links">
-                                                            <li tal:repeat="mgid (sorted(PluginConfigs['config'][PluginConfigs['links'][host][plugin]]))">
+                                                            <li tal:repeat="plugin sorted(DT[domain][host].keys())">
                                                                 &nbsp; &nbsp; &nbsp;
                                                                 &nbsp; &nbsp; &nbsp;
                                                                 &nbsp; &nbsp; &nbsp;
-                                                                <input onclick="ToggleChildCBs('${repeat.host.number}.${repeat.plugin.number}.${repeat.mgid.number}');" id="${repeat.host.number}.${repeat.plugin.number}.${repeat.mgid.number}" type="checkbox" />
-                                                                <span onclick="ToggleDisplay('d${repeat.host.number}.${repeat.plugin.number}');">
-                                                                    ${mgid}
+                                                                <input tal:condition="len(DT[domain][host][plugin])<2" tal:define="mgid plugin" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                                <span tal:condition="len(DT[domain][host][plugin])<2" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
+                                                                    ${plugin}
                                                                 </span>
-                                                                <span onclick="ToggleDisplay('AllHosts');">
+
+                                                                <input tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}" type="checkbox" />
+                                                                <span tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
+                                                                    ${plugin}
+                                                                    <span tal:condition="len(DT[domain][host][plugin])>1">(${len(DT[domain][host][plugin])})</span>
+                                                                </span>
+
+                                                                <span onclick="ToggleDisplay('AllDomains');">
                                                                 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
                                                                 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
                                                                 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
                                                                 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
                                                                 </span>
+
+                                                                    <div tal:condition="len(DT[domain][host][plugin])>1">
+                                                                        <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}">    
+                                                                            <ul class="links">
+                                                                                <li tal:repeat="mgid sorted(DT[domain][host][plugin])">
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                                                    <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
+                                                                                        ${mgid}
+                                                                                    </span>
+                                                                                    <span onclick="ToggleDisplay('AllDomains');">
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    </span>
+
+                                                                            </li>
+                                                                        </ul>
+                                                                    </div>
+
                                                             </li>
                                                         </ul>
                                                     </div>
-                                                </div>
 
-                                        </li>
-                                    </ul>
-                                </div>
-                            
-                       </li>
-                    </ul>
-                </div>
-            </div><!-- id="select-section"-->
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                           </li>
+                        </ul>
+                    </div><!-- id="AllDomains" -->
+                </div><!-- id="OrderByDomain" -->
+            </div><!-- id="SelectionSection" -->
 
             <br>
 

@@ -43,6 +43,7 @@ class ReadConfig(object):
             stdout, stderr = p.communicate()
             if stderr == '':
                 if sequence < 1:
+                    domain = MCutils.GetDomain(host)
                     # Update the domain and plugin trees used for graph selection.
                     if not PluginConfigs['DomainTree'].has_key(domain):
                         PluginConfigs['DomainTree'][domain] = {}
