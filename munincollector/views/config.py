@@ -131,6 +131,7 @@ class ReadConfig(object):
 
                     if not PluginConfigs['config'].has_key(hash):
                         PluginConfigs['config'][hash] = {}
+                        PluginConfigs['resolved'][hash] = False
                                          
                     if not PluginConfigs['config'][hash].has_key(mgid):
                         PluginConfigs['config'][hash][mgid] = {}

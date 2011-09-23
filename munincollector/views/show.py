@@ -2,6 +2,7 @@ from pyramid.response import Response
 from pyramid.renderers import render_to_response
 from subprocess import PIPE, Popen, STDOUT
 import os
+import re
 import time
 import lockfile
 import MCutils
@@ -21,6 +22,20 @@ def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, plugin, mgid, domain, 
         str(PC['MgidXref'].index(mgid)) + '.' +
         str(PC['DomainXref'].index(domain)) + '.' +
         str(PC['HostXref'].index(host))) in CheckedBoxes:
+
+        if not PC['resolved'][PC['links'][host][plugin]]:
+            PC['resolved'][PC['links'][host][plugin]] = True
+
+            for r_mgid in PC['config'][PC['links'][host][plugin]].keys():
+                for r_key in PC['config'][PC['links'][host][plugin]][mgid].keys():
+                    for r_match in re.finditer(r'\${[\w]+}', PC['config'][PC['links'][host][plugin]][mgid][r_key]):
+                        r_kw = r_match.group()[2:-1]
+                        if PC['config'][PC['links'][host][plugin]][mgid].has_key(r_kw):
+                            PC['config'][PC['links'][host][plugin]][mgid][r_key] = PC['config'][PC['links'][host][plugin]][mgid][r_key].replace(r_match.group(), PC['config'][PC['links'][host][plugin]][mgid][r_kw], 1)
+                        else:
+                            if r_kw == 'graph_period': PC['config'][PC['links'][host][plugin]][mgid][r_key] = PC['config'][PC['links'][host][plugin]][mgid][r_key].replace(r_match.group(), 'second', 1)
+
+
         data_path = MC['DataDir'] + '/' + host + '-' + mgid
         if PC['config'][PC['links'][host][plugin]][mgid].has_key('graph_order'):
             data_sources = PC['config'][PC['links'][host][plugin]][mgid]['graph_order'].split()

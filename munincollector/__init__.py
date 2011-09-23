@@ -158,7 +158,7 @@ def main(global_config, **settings):
         'Options': Options,
         }
 
-    PluginConfigs = {'config': {}, 'datasource': {}, 'hostdomains': {}, 'links': {}}
+    PluginConfigs = {'config': {}, 'datasource': {}, 'hostdomains': {}, 'links': {}, 'resolved': {}}
 
     # Cache plugin links (stage 1): 
     #     PluginConfigs['links'][<host>][<plugin>] = <hash>
@@ -214,6 +214,7 @@ def main(global_config, **settings):
 
                 if not PluginConfigs['config'].has_key(hash):
                     PluginConfigs['config'][hash] = {}
+                    PluginConfigs['resolved'][hash] = False
 
                 if not PluginConfigs['config'][hash].has_key(mgid):
                     PluginConfigs['config'][hash][mgid] = {}
