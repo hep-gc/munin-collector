@@ -354,11 +354,11 @@ window.onload = function() {
 
                 <div id="right">
                     <br><input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
-                        <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)==1" type="button" value="&#60;"/>
-                        <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)==1" type="button" value="&#62;"/>
+                        <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                        <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
                     <br><input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
-                        <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)==1" type="button" value="&#60;"/>
-                        <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)==1" type="button" value="&#62;"/>
+                        <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                        <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
                     <br><input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
                     <br>
                     <br><input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />

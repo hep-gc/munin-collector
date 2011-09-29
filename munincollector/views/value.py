@@ -2,7 +2,7 @@ from pyramid.response import Response
 from subprocess import PIPE, Popen, STDOUT
 import os
 import re
-import lockfile
+#import lockfile
 import MCutils
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
@@ -45,11 +45,11 @@ class ReadValue(object):
 
                 PC = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid]
 
-                lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
-                try:
-                    lock.acquire(timeout=270)
-                except:
-                    return Response('munin-collector-value: unable to obtain value update file lock.\n')
+#                lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
+#                try:
+#                    lock.acquire(timeout=270)
+#                except:
+#                    return Response('munin-collector-value: unable to obtain value update file lock.\n')
 
                 rrd_path = MCconfig['DataDir'] + '/' + host + '-' + mgid + '-' + key + MCutils.MuninType(PC, key) + '.rrd'
                 if not os.path.exists(rrd_path): 
@@ -84,7 +84,7 @@ class ReadValue(object):
                     stdout=PIPE, stderr=PIPE)
                     stdout, stderr = p.communicate()
                     if stderr != '':
-                        lock.release()
+#                        lock.release()
                         return Response('munin-collector-value: unable to create rrd file -' + data_source + ' ' + stderr)
 
                 value_list = values.split()
@@ -105,10 +105,10 @@ class ReadValue(object):
 
 
                 if stderr != '':
-                    lock.release()
+#                    lock.release()
                     return Response('munin-collector-value: unable to update rrd file -' + stderr)
 
-                lock.release()
+#                lock.release()
                 return Response('OK\n')
 
             else:

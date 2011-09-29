@@ -136,8 +136,10 @@ function SetCBs(my) {
             }
 
         for (i=1;i<cbs.length;i++) {
-            document.getElementById(cbs[i]).checked = true;
-            ToggleAlternateCB(cbs[i], cbs[i]);
+            if (cbs[i] != '') {
+                document.getElementById(cbs[i]).checked = true;
+                ToggleAlternateCB(cbs[i], cbs[i]);
+            }
         }
     }
 }
