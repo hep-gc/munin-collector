@@ -42,7 +42,6 @@ window.onload = function() {
     <div id="content" class="bottom">
         <form onsubmit="FormSubmit('submit');" id=ShowByHostForm>
 
-            <input type="hidden" id="h1" name="h1" value="${Options['h1']['value']}" />
             <input type="hidden" id="h2" name="h2" value="${Options['h2']['value']}" />
             <input type="hidden" id="h3" name="h3" value="${Options['h3']['value']}" />
 

@@ -17,7 +17,7 @@ Palette = (
     '666600', 'FFBFFF', '00FFCC', 'CC6699', '999900',
     )
 
-def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, plugin, mgid, domain, host):
+def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
     if (str(PC['PluginXref'].index(plugin)) + '.' + 
         str(PC['MgidXref'].index(mgid)) + '.' +
         str(PC['DomainXref'].index(domain)) + '.' +
@@ -46,10 +46,12 @@ def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, plugin, mgid, domain, 
             # Generate a CSV file; start by fetching data.
             if ('no-long-names' in MC['Options'] or Options['ta']['disabled'] == 'disabled'):
                 csv_heading = host + '-' + mgid + '.csv'
-                csv_path = Options['h1']['value'] + '/' + csv_heading
+#                csv_path = Options['h1']['value'] + '/' + csv_heading
+                csv_path = UsersIP + '/' + csv_heading
             else:
                 csv_heading = host + '-' + mgid + '-' + str(Options['ta']['value']) + '-' + str(Options['tr']['value']) + '-' + str(Options['ht']['value']) + 'x' + str(Options['wd']['value']) + '.csv'
-                csv_path = Options['h1']['value'] + '/' + csv_heading
+#                csv_path = Options['h1']['value'] + '/' + csv_heading
+                csv_path = UsersIP + '/' + csv_heading
             Columns = ['Time']
             Rows = {}
             for ds in data_sources:
@@ -103,10 +105,12 @@ def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, plugin, mgid, domain, 
 
             if ('no-long-names' in MC['Options'] or Options['ta']['disabled'] == 'disabled'):
                 graph_heading = host + '-' + mgid + image_format[0]
-                graph_path = Options['h1']['value'] + '/' + graph_heading
+#                graph_path = Options['h1']['value'] + '/' + graph_heading
+                graph_path = UsersIP + '/' + graph_heading
             else:
                 graph_heading = host + '-' + mgid + '-' + str(Options['ta']['value']) + '-' + str(Options['tr']['value']) + '-' + str(Options['ht']['value']) + 'x' + str(Options['wd']['value']) + image_format[0]
-                graph_path = Options['h1']['value'] + '/' + graph_heading
+#                graph_path = Options['h1']['value'] + '/' + graph_heading
+                graph_path = UsersIP + '/' + graph_heading
 
             graph_command = [
                 'rrdtool',
@@ -296,8 +300,8 @@ class DisplayMetrics(object):
         Now = time.time()
         # Set parameter defaults. NB: enabled parameters will have a 'disabled' value equal to their parameter name.
         Options = {
-            # Munin graph subdirectory (hidden value)
-            'h1': {'type': 'dir', 'disabled': 'h1', 'value': str(int(Now))},
+#            # Munin graph subdirectory (hidden value)
+#            'h1': {'type': 'dir', 'disabled': 'h1', 'value': str(int(Now))},
 
             # Checkbox selections (hidden value)
             'h2': {'type': 'str', 'disabled': 'h2', 'value': ''},           
@@ -368,9 +372,16 @@ class DisplayMetrics(object):
                     Options[param]['disabled'] = param
                     Options[param]['value'] = param_value
 
-        # Ensure image sub-directory (h1 parameter) exists.
-        if not os.path.exists(MCconfig['ImageDir'] + "/" + Options['h1']['value']):
-            p = Popen(['mkdir', '-p',  MCconfig['ImageDir'] + '/' + Options['h1']['value']], stdout=PIPE, stderr=PIPE)
+#        # Ensure image sub-directory (h1 parameter) exists.
+#        if not os.path.exists(MCconfig['ImageDir'] + "/" + Options['h1']['value']):
+#            p = Popen(['mkdir', '-p',  MCconfig['ImageDir'] + '/' + Options['h1']['value']], stdout=PIPE, stderr=PIPE)
+#            stdout, stderr = p.communicate()
+#            if stderr != '':
+#                return Response('munin-collector-show: unable to create image sub-directory.\n')
+
+        # Ensure image sub-directory (uses client's IP address) exists.
+        if not os.path.exists(MCconfig['ImageDir'] + "/" + self.request.remote_addr):
+            p = Popen(['mkdir', '-p',  MCconfig['ImageDir'] + '/' + self.request.remote_addr], stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
             if stderr != '':
                 return Response('munin-collector-show: unable to create image sub-directory.\n')
@@ -392,14 +403,14 @@ class DisplayMetrics(object):
                 for mgid in sorted(PluginConfigs['PluginTree'][plugin].keys()):
                     for domain in sorted(PluginConfigs['PluginTree'][plugin][mgid].keys()):
                         for host in sorted(PluginConfigs['PluginTree'][plugin][mgid][domain]):
-                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, plugin, mgid, domain, host)
+                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
 
         else:
             for domain in sorted(PluginConfigs['DomainTree'].keys()):
                 for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
                     for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
                         for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, plugin, mgid, domain, host)
+                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
 
         return render_to_response('munincollector:templates/show.pt', {
             'request': self.request,
