@@ -17,11 +17,12 @@ Palette = (
     '666600', 'FFBFFF', '00FFCC', 'CC6699', '999900',
     )
 
-def DrawGraphs(MC, PC, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
-    if (str(PC['PluginXref'].index(plugin)) + '.' + 
+def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
+    if (plugin in Plugins or
+        str(PC['PluginXref'].index(plugin)) + '.' + 
         str(PC['MgidXref'].index(mgid)) + '.' +
         str(PC['DomainXref'].index(domain)) + '.' +
-        str(PC['HostXref'].index(host))) in CheckedBoxes:
+        str(PC['HostXref'].index(host)) in CheckedBoxes):
 
         if not PC['resolved'][PC['links'][host][plugin]]:
             PC['resolved'][PC['links'][host][plugin]] = True
@@ -345,6 +346,9 @@ class DisplayMetrics(object):
             # Graph title
             'if': {'type': 'str', 'disabled': 'if', 'value': 'PNG'},
 
+            # Display graphs for a comma separated list of plugins.
+            'p': {'type': 'str', 'disabled': 'disabled', 'value': ''},
+
             }
 
         # Process keyword/value parameters.
@@ -389,6 +393,9 @@ class DisplayMetrics(object):
         # Process the resource selection (h2) parameter.
         CheckedBoxes = Options['h2']['value'].split('_')
 
+        # Process the plugin selection (p) parameter.
+        Plugins = Options['p']['value'].split(',')
+
         # Rationalize absolute start time ("ta") and relative start time/range ("tr") parameters.
         if (Options['ta']['disabled'] == 'disabled'):
             Options['ta']['value'] = int(Now - (Options['tr']['value'] * 3600.0))
@@ -403,14 +410,14 @@ class DisplayMetrics(object):
                 for mgid in sorted(PluginConfigs['PluginTree'][plugin].keys()):
                     for domain in sorted(PluginConfigs['PluginTree'][plugin][mgid].keys()):
                         for host in sorted(PluginConfigs['PluginTree'][plugin][mgid][domain]):
-                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
 
         else:
             for domain in sorted(PluginConfigs['DomainTree'].keys()):
                 for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
                     for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
                         for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                            DrawGraphs(MCconfig, PluginConfigs, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
 
         return render_to_response('munincollector:templates/show.pt', {
             'request': self.request,
