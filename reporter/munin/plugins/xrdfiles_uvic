@@ -1,0 +1,24 @@
+#!/bin/bash
+	if [[ $1 == 'config' ]] ; then
+		cat <<'EOM'
+graph_category cloud
+graph_title Xrootd Open Files
+graph_vlabel Number of Open Files
+graph_info Graph indicates the number of open files of each type by xrootd.
+graph_args --lower-limit 0 
+graph_order all regular tcpip other 
+all.label Total
+all.type GAUGE
+all.draw AREA
+all.colour cccccc
+regular.label Regular Files
+regular.type GAUGE
+regular.draw LINE
+tcpip.label TCP/IP Connections
+tcpip.type GAUGE
+tcpip.draw LINE
+EOM
+		exit
+	fi
+
+	/usr/sbin/lsof -u xrootd | /usr/bin/awk 'BEGIN{all=0; regular=0; tcpip=0} {all++; if ($5=="REG") regular++; if ($5=="IPv4"||$5=="IPv6") tcpip++;} END{print "all.value " all "\nregular.value " regular "\ntcpip.value " tcpip}'

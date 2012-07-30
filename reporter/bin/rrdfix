@@ -1,0 +1,24 @@
+#!/bin/bash
+        if [[ $1 == "" ]]; then 
+		echo 'synopsis: rrdfix filename.rrd <y>'
+                echo
+                echo 'Performs the following if the "y" option is specified:' 
+                echo '   o Renames the rrd file by adding a suffix "-rrdfix-<date>-<time>".'
+                echo '   o Dumps the file to a tempfile, modifying exponents greater than 10 to "00".'
+                echo '   o Restores the tempfile into new .rrd file with the original name.'
+                echo
+                echo 'Otherwise:'
+                echo '   o Lists all the lines that would be changed.'
+        elif [[ -e $1 ]]; then 
+		if [[ $2 == 'y' ]]; then
+			ts=`date +%F-%T`
+			mv $1 $1-rrdfix-$ts
+                        rrdtool dump $1-rrdfix-$ts | sed s/e+[1-9][0-9]/e+00/ >/tmp/rrdfix-$ts
+                        rrdtool restore /tmp/rrdfix-$ts $1
+		else
+			rrdtool dump $1 | awk '/e\+[1-9]/'
+			echo 'Specify "rrdfix ' $1 ' y" to fix bad values.'
+		fi
+	else
+		echo 'File "'$1'" not found.'
+	fi

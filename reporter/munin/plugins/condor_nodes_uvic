@@ -1,0 +1,20 @@
+#!/bin/sh
+PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+if [ "$1" = "config" ]; then
+
+echo 'graph_title Condor Nodes'
+        echo 'graph_category Cloud'
+echo 'graph_vlabel nodes'
+echo 'graph_width 800'
+echo 'graph_height 500'
+echo 'nodes.label nodes'
+
+exit 0
+fi
+
+#export CONDOR_CONFIG=/opt/condor-7.5.4/etc/condor_config
+
+condor_status | awk '!/^Name/' |awk '/^[a-zA-Z0-9]/' | wc -l | awk '{print "nodes.value " $1}'
+exit 0
+

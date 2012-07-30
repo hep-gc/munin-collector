@@ -1,0 +1,143 @@
+#!/usr/bin/perl
+#	Save the statistics for the local node by running fetch on each of the configured
+#	Munin plugins and stacking the results in a Redis database. Separate stacks are
+#	maintained for each configured Munin master node.
+
+#
+# 	Set command paths.
+#
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+
+#
+# 	Set testing and debug switches.
+#
+	$Testing = 1;
+	$etcdir = '/etc/munin';
+
+#
+# 	Ensure we're running as root.
+#
+        if (`whoami` ne "root\n") {
+			print "Command MUST be run as user 'root'.\n";
+			exit;
+		}
+
+#
+#	Retrieve the host and port for the Redis server.
+#
+	$Hostname = `hostname`; chop($Hostname);
+	$RedisHost = `host $Hostname | awk '{print \$4}'`;
+	chop($RedisHost);
+	$RedisPort = 6379;
+	@x = `awk '/^bind|^port /' /etc/redis.conf`;
+	foreach $x (@x) {
+		@y = split(/[\s\n]+/, $x);
+		if ($y[0] eq 'bind') {
+			$RedisHost  = $y[1];
+		} elsif ($y[0] eq 'port') {
+			$RedisPort  = $y[1];
+		}
+	}
+
+#
+#	Retrieve the IP address for all configured Munin masters.
+#
+	@x = `awk '/^host_name |^allow /' $etcdir/munin-node.conf`;
+	foreach $x (@x) {
+		@y = split(/[\s\n]+/, $x);
+		if ($y[0] eq 'host_name') {
+			$Hostname  = $y[1];
+		} elsif ($y[0] eq 'allow') {
+			# ($y[1] = $y[1]) =~ s/[\\\^\$]//g;
+			$y[1] =~ s/[\\\^\$]//g;
+			splice(@MuninMasters,$#MuninMasters+1,0,$y[1]);
+		}
+	}
+
+#
+#	Check for and process munin-node-redis.conf (munin master overides).
+#
+	if (-e "$etcdir/munin-node-redis.conf") {
+		@MuninMasters = `awk '!/^#/' $etcdir/munin-node-redis.conf | awk '/[0-9]/ {gsub(/\,/,""); split(\$0,a); for(w in a) print \$w}'`;
+		for ($i=0; $i<=$#MuninMasters; $i++) {
+			chop($MuninMasters[$i]);
+		}
+	}
+
+#
+#	If testing, print the IP address of all configured Munin masters.
+#
+	if ($Testing) {
+		for ($i=0; $i<=$#MuninMasters; $i++) {
+			print "$MuninMasters[$i]\n";
+		}
+	}
+
+#
+#	Check for plugin config changes and reset checkpoint and Redis if it has changed.
+#
+	$dbdir = '/tmp';
+	if (-e "$dbdir/munin-node-redis-ckpt") {
+		$oldckpt = `cat $dbdir/munin-node-redis-ckpt`;
+		chop($oldckpt);
+	} else {
+		$oldckpt = '<none>';
+	}
+	$newckpt = `ls -lL $etcdir/plugins | sha1sum -`;
+	if ($oldckpt ne $newckpt) {
+		system("echo '$newckpt' >$dbdir/munin-node-redis-ckpt");
+		system("redis-cli -h $RedisHost -p $RedisPort del hostname >/dev/null");
+	}
+
+#
+#	Retrieve the configured plugin list.
+#
+	@PluginList = `ls $etcdir/plugins`;
+	for ($i=0; $i<=$#PluginList; $i++) {
+		chop($PluginList[$i]);
+	}
+
+#
+#	If the hostname variable is not set in Redis, set it ...
+#
+	@x = `redis-cli -h $RedisHost -p $RedisPort get hostname`;
+	if ($x[0] eq "\n" || $x[0] eq "(nil)\n") {
+		print "setting hostname\n" if $Testing;
+		system("redis-cli -h $RedisHost -p $RedisPort set hostname '$Hostname' >/dev/null");
+
+#
+#		... then for each plugin, stack its config.
+#
+		foreach $plugin (@PluginList) {
+			$x = join('', `/usr/sbin/munin-run $plugin config`);
+			$x =~ s/[\n]/\\/g;
+			system("redis-cli -h $RedisHost -p $RedisPort set +Plugin:$plugin '$x' >/dev/null");
+		}
+	}
+
+#
+#	Current time in UTC.
+#
+	$time = `date -u +%s`;
+	chop($time);
+
+#
+#	Process the list of configured plugins. For each plugin, stack the plugin name, time, and data.	
+#	
+	foreach $plugin (@PluginList) {
+		$x = join('', "$plugin $time\\", `/usr/sbin/munin-run $plugin`);
+		$x =~ s/[\n]/\\/g;
+		RedisPush("$x");
+	}
+	RedisPush('<no-more> <plugin>\<data>');
+
+#
+#	Stack plogin data for each configured Munin master.
+#
+sub RedisPush() {
+	my ($i, $data);
+	$data = shift();
+	for ($i=0; $i<=$#MuninMasters; $i++) {
+		system("redis-cli -h $RedisHost -p $RedisPort rpush $MuninMasters[$i] '$data' >/dev/null");
+	}
+}

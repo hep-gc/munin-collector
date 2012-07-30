@@ -1,0 +1,23 @@
+#!/bin/sh
+PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+if [ "$1" = "config" ]; then
+
+echo 'graph_title Condor Jobs'
+        echo 'graph_category Cloud'
+echo 'graph_vlabel Jobs'
+echo 'graph_width 800'
+echo 'graph_height 500'
+echo 'graph_order all queued held running'
+echo 'all.label All Jobs'
+echo 'all.draw AREA'
+echo 'all.colour cccccc'
+echo 'running.label Running Jobs'
+echo 'queued.label Queued Jobs'
+echo 'held.label Held Jobs'
+exit 0
+fi
+
+#export CONDOR_CONFIG=/opt/condor-7.5.4/etc/condor_config
+
+condor_q | /bin/awk '/running/ {print "running.value " $5 "\nqueued.value " $3 "\nheld.value " $7 "\nall.value " $1}'

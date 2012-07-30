@@ -1,0 +1,130 @@
+#!/bin/bash
+#	Process the columns of cloud_status -m
+#
+#	$1          $2                      $3                  $4          $5          $6	
+#	ID          HOSTNAME                VMTYPE              USER        STATUS      CLUSTER
+
+	declare -i StatusCol=5
+	declare -i ClusterCol=6
+
+	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+	if [ "$1" = "config" ]; then
+		cloud_status -l | sort | awk \
+			'BEGIN{ \
+				colourcount = 12; \
+				colours[1,1] = "000000"; \
+				colours[1,2] = "000088"; \
+				colours[1,3] = "666688"; \
+				colours[2,1] = "000000"; \
+				colours[2,2] = "008800"; \
+				colours[2,3] = "668866"; \
+				colours[3,1] = "000000"; \
+				colours[3,2] = "008888"; \
+				colours[3,3] = "668888"; \
+				colours[4,1] = "000000"; \
+				colours[4,2] = "880000"; \
+				colours[4,3] = "886666"; \
+				colours[5,1] = "000000"; \
+				colours[5,2] = "880088"; \
+				colours[5,3] = "886688"; \
+				colours[6,1] = "000000"; \
+				colours[6,2] = "888800"; \
+				colours[6,3] = "888866"; \
+				colours[7,1] = "000000"; \
+				colours[7,2] = "0000ff"; \
+				colours[7,3] = "ccccff"; \
+				colours[8,1] = "000000"; \
+				colours[8,2] = "00ff00"; \
+				colours[8,3] = "ccffcc"; \
+				colours[9,1] = "000000"; \
+				colours[9,2] = "00ffff"; \
+				colours[9,3] = "ccffff"; \
+				colours[10,1] = "000000"; \
+				colours[10,2] = "ff0000"; \
+				colours[10,3] = "ffcccc"; \
+				colours[11,1] = "000000"; \
+				colours[11,2] = "ff00ff"; \
+				colours[11,3] = "ffccff"; \
+				colours[12,1] = "000000"; \
+				colours[12,2] = "ffff00"; \
+				colours[12,3] = "ffffcc"; \
+
+				cloudcount = 0; \
+
+				statecount = 3; \
+				states[1] = "Error"; \
+				states[2] = "Running"; \
+				states[3] = "Starting" \
+				} \
+
+			{ \
+				if ($1=="") next; \
+				cloudcount++; \
+				clouds[cloudcount] = $1 \
+				} \
+
+			END{ \
+				print "graph_title Cloud Scheduler VMs by Cloud"; \
+				print "graph_category Cloud"; \
+				print "graph_vlabel Virtual Machines"; \
+				print "graph_width 800"; \
+				print "graph_height 500\n"; \
+
+				AreaStack = "AREA"; \
+				for (cloud=1; cloud<=cloudcount; cloud++) \
+					for (state=1; state<=statecount; state++) { \
+						colour = 1 + (cloud % colourcount); \
+#						if (state==2) colour = 1 + (cloud % colourcount); \
+#						else colour = colourcount + state; \
+						print clouds[cloud] "-" states[state] ".label " states[state] " on " clouds[cloud] "\n" \
+							clouds[cloud] "-" states[state] ".draw " AreaStack "\n" \
+							clouds[cloud] "-" states[state] ".colour " colours[colour,state] "\n" \
+							clouds[cloud] "-" states[state] ".max 10000\n" \
+							clouds[cloud] "-" states[state] ".min 0\n"; \
+						AreaStack = "STACK"; \
+						} \
+
+				print "heartbeat.label Cloud Scheduler Heartbeat"; \
+				print "heartbeat.draw LINE3"; \
+				print "heartbeat.colour ff0000\n"; \
+				}'
+	else
+		cloud_status -m | awk \
+			'BEGIN{ \
+				cloudcount = 0; \
+				while (("cloud_status -l | sort" | getline line)>0) { \
+					split(line, words); \
+					if (words[1]!="") { \
+						cloudcount++; \
+						clouds[cloudcount] = words[1] \
+						} \
+					} \
+
+				statecount = 3; \
+				states[1] = "Error"; \
+				states[2] = "Running"; \
+				states[3] = "Starting"; \
+
+				switch = "Yes" \
+				} \
+
+			/couldn\047t connect/ {switch="No"}; \
+
+			// { \
+				if ($0=="" || $1=="ID" || $1=="Total") next; \
+				state="Error"; \
+				if ($'$StatusCol'=="Running" || $'$StatusCol'=="ExpiredProxy" || $'$StatusCol'=="Retiring") state="Running"; \
+				if ($'$StatusCol'=="Starting") state="Starting"; \
+				count[$'$ClusterCol',state]=count[$'$ClusterCol',state]+1 \
+				} \
+
+			END{ \
+				for (cloud=1; cloud<=cloudcount; cloud++) \
+					for (state=1; state<=statecount; state++) { \
+						print clouds[cloud] "-" states[state] ".value " count[clouds[cloud],states[state]]+0 \
+						} \
+
+				if (switch=="Yes") print "heartbeat.value 0.0"; \
+				}'
+	fi

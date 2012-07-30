@@ -1,0 +1,97 @@
+#!/bin/bash
+#	Process the columns of cloud_status -m
+#
+#	$1          $2                      $3                  $4          $5          $6      
+#	ID          HOSTNAME                VMTYPE              USER        STATUS      CLUSTER
+
+	declare -i StatusCol=5
+	declare -i ClusterCol=6
+
+	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+	if [ "$1" = "config" ]; then
+		cloud_status -l | sort | awk \
+			'BEGIN{ \
+				cloudcount = 0; \
+				} \
+
+			{ \
+				if ($1=="") next; \
+				cloudcount++; \
+				clouds[cloudcount] = $1 \
+				} \
+
+			END{ \
+				for (cloud=1; cloud<=cloudcount; cloud++) { \
+					print "multigraph cloud_" clouds[cloud]; \
+					print "graph_title Cloud Activity on " clouds[cloud]; \
+					print "graph_category Cloud"; \
+					print "graph_vlabel Virtual Machines"; \
+					print "graph_width 800"; \
+					print "graph_height 500\n"; \
+
+					print "error.label Error"; \
+					print "error.draw AREA"; \
+					print "error.colour 000000"; \
+					print "error.max 10000"; \
+					print "error.min 0\n"; \
+
+					print "running.label Running"; \
+					print "running.draw STACK"; \
+					print "running.colour 008888"; \
+					print "running.max 10000"; \
+					print "running.min 0\n"; \
+
+					print "starting.label Starting"; \
+					print "starting.draw STACK"; \
+					print "starting.colour cccccc"; \
+					print "starting.max 10000"; \
+					print "starting.min 0\n"; \
+
+					print "heartbeat.label Cloud Scheduler Heartbeat"; \
+					print "heartbeat.draw LINE3"; \
+					print "heartbeat.colour ff0000\n"; \
+					} \
+				}'
+	else
+		cloud_status -m | awk \
+			'BEGIN{ \
+				cloudcount = 0; \
+				while (("cloud_status -l | sort" | getline line)>0) { \
+					split(line, words); \
+					if (words[1]!="") { \
+						cloudcount++; \
+						clouds[cloudcount] = words[1] \
+						} \
+					} \
+
+				statecount = 3; \
+				states[1] = "Error"; \
+				states[2] = "Running"; \
+				states[3] = "Starting"; \
+
+				switch = "Yes" \
+				} \
+
+			/couldn\047t connect/ {switch="No"}; \
+
+			// { \
+				if ($0=="" || $1=="ID" || $1=="Total") next; \
+				state="error"; \
+				if ($'$StatusCol'=="Running" || $'$StatusCol'=="ExpiredProxy" || $'$StatusCol'=="Retiring") state="running"; \
+				if ($'$StatusCol'=="Starting") state="starting"; \
+				count[$'$ClusterCol',state]++ \
+				} \
+
+			END{ \
+				for (cloud=1; cloud<=cloudcount; cloud++) { \
+					print "multigraph cloud_" clouds[cloud]; \
+					print "error.value " count[clouds[cloud],"error"]+0; \
+					print "running.value " count[clouds[cloud],"running"]+0; \
+					print "starting.value " count[clouds[cloud],"starting"]+0; \
+
+					if (switch=="Yes") print "heartbeat.value 0.0"; \
+					print "\n" \
+					} \
+				}'
+	fi
