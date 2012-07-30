@@ -31,7 +31,7 @@
 	$RedisHost = `host $Hostname | awk '{print \$4}'`;
 	chop($RedisHost);
 	$RedisPort = 6379;
-	@x = `awk '/^bind|^port /' $redi_conf/redis.conf`;
+	@x = `awk '/^bind|^port /' $redis_conf/redis.conf`;
 	foreach $x (@x) {
 		@y = split(/[\s\n]+/, $x);
 		if ($y[0] eq 'bind') {
