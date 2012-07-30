@@ -40,9 +40,9 @@
 #
 	system('cp bin/munin-node-redis /usr/local/sbin/');
 	system('cp cron/munin-node-redis /etc/cron.d/');
-	system('cp etc/munin-node-redis.conf /usr/local/etc/ if !(-e '/usr/local/etc/munin-node-redis.conf');
+	system('cp etc/munin-node-redis.conf /usr/local/etc/') if !(-e '/usr/local/etc/munin-node-redis.conf');
 
 	system('cp bin/munin-node-reporter /usr/local/sbin/');
 	system('cp cron/munin-node-reporter /etc/cron.d/');
-	system('cp etc/munin-node-reporter.conf /usr/local/etc/ if !(-e '/usr/local/etc/munin-node-reporter.conf');
+	system('cp etc/munin-node-reporter.conf /usr/local/etc/') if !(-e '/usr/local/etc/munin-node-reporter.conf');
 
