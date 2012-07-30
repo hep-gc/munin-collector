@@ -12,7 +12,9 @@
 # 	Set testing and debug switches.
 #
 	$Testing = 1;
-	$etcdir = '/etc/munin';
+	$conf_dir = '/usr/local/etc';
+	$munin_conf = '/etc/munin';
+	$redis_conf = '/etc';
 
 #
 # 	Ensure we're running as root.
@@ -29,7 +31,7 @@
 	$RedisHost = `host $Hostname | awk '{print \$4}'`;
 	chop($RedisHost);
 	$RedisPort = 6379;
-	@x = `awk '/^bind|^port /' /etc/redis.conf`;
+	@x = `awk '/^bind|^port /' $redi_conf/redis.conf`;
 	foreach $x (@x) {
 		@y = split(/[\s\n]+/, $x);
 		if ($y[0] eq 'bind') {
@@ -42,7 +44,7 @@
 #
 #	Retrieve the IP address for all configured Munin masters.
 #
-	@x = `awk '/^host_name |^allow /' $etcdir/munin-node.conf`;
+	@x = `awk '/^host_name |^allow /' $munin_conf/munin-node.conf`;
 	foreach $x (@x) {
 		@y = split(/[\s\n]+/, $x);
 		if ($y[0] eq 'host_name') {
@@ -55,10 +57,10 @@
 	}
 
 #
-#	Check for and process munin-node-redis.conf (munin master overides).
+#	Check for and process munin-node-redis.conf.
 #
-	if (-e "$etcdir/munin-node-redis.conf") {
-		@MuninMasters = `awk '!/^#/' $etcdir/munin-node-redis.conf | awk '/[0-9]/ {gsub(/\,/,""); split(\$0,a); for(w in a) print \$w}'`;
+	if (-e "$conf_dir/munin-node-redis.conf") {
+		@MuninMasters = `awk '!/^#/' $conf_dir/munin-node-redis.conf | awk '/[0-9]/ {gsub(/\,/,""); split(\$0,a); for(w in a) print \$w}'`;
 		for ($i=0; $i<=$#MuninMasters; $i++) {
 			chop($MuninMasters[$i]);
 		}
@@ -83,7 +85,7 @@
 	} else {
 		$oldckpt = '<none>';
 	}
-	$newckpt = `ls -lL $etcdir/plugins | sha1sum -`;
+	$newckpt = `ls -lL $munin_conf/plugins | sha1sum -`;
 	if ($oldckpt ne $newckpt) {
 		system("echo '$newckpt' >$dbdir/munin-node-redis-ckpt");
 		system("redis-cli -h $RedisHost -p $RedisPort del hostname >/dev/null");
@@ -92,7 +94,7 @@
 #
 #	Retrieve the configured plugin list.
 #
-	@PluginList = `ls $etcdir/plugins`;
+	@PluginList = `ls $munin_conf/plugins`;
 	for ($i=0; $i<=$#PluginList; $i++) {
 		chop($PluginList[$i]);
 	}

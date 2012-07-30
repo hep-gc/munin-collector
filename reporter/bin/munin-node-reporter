@@ -16,7 +16,7 @@
         $ConfigurationFile = $ENV{'MUNIN_NODE_REPORTER_CONF'};
         }
     else {
-        $ConfigurationFile = '/etc/munin/munin-node-reporter.conf';
+        $ConfigurationFile = '/usr/local/etc/munin-node-reporter.conf';
         }
 
     if (! -e $ConfigurationFile) {
