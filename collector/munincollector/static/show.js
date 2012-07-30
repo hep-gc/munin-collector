@@ -22,7 +22,7 @@ function CountCBs(my) {
     if (my == null) {
         firstnode=document.getElementById("OrderByPlugin");
         count = CountCBs(firstnode);
-        document.getElementById("B3").value = "Refresh selected resources (" + count + ")";
+        document.getElementById("B3").value = "Show Graphs (" + count + ")";
         }
     else {
         count = 0;
@@ -65,7 +65,7 @@ function DisableAll(my) {
 }
 
 function DisableDisabled(my) {
-    var children, firstnode, i;
+    var children, en, firstnode, i, ne;
 
     if (my == null) {
         firstnode=document.getElementById("options-section");
@@ -74,6 +74,12 @@ function DisableDisabled(my) {
     else {
         if (my.tagName == "INPUT" && my.name == "disabled") {
             my.disabled = true;
+
+            en = my.id + '-en';
+            ne = my.id + '-ne';
+
+            document.getElementById(en).hidden = 'hidden';
+            document.getElementById(ne).removeAttribute('hidden');
             }
 
         children = my.childNodes;
@@ -85,15 +91,26 @@ function DisableDisabled(my) {
 }
 
 function EnableDisable(id1,id2) {
+    var en, ne;
+
+    en = id1 + '-en';
+    ne = id1 + '-ne';
+
     if (document.getElementById(id1).disabled == true) {
         document.getElementById(id1).disabled = false;
         document.getElementById(id1).name = id1
         document.getElementById(id1).focus();
+
+        document.getElementById(en).removeAttribute('hidden');
+        document.getElementById(ne).hidden = 'hidden';
         }
     else {
         document.getElementById(id1).disabled = true;
         document.getElementById(id1).name = "disabled"
         document.getElementById(id1).blur();
+
+        document.getElementById(en).hidden = 'hidden';
+        document.getElementById(ne).removeAttribute('hidden');
         }
 
     if (id1 == id2 || document.getElementById(id1).disabled == true)
@@ -280,16 +297,42 @@ function ToggleChildCBs(pid, my) {
 }
 
 function ToggleDisplay(id) {
-    var element;
+    var element, minus, plus;
+
 
     element = document.getElementById(id);
-    if (element.style.display == '' || element.style.display == 'block')
+    minus = id + '-minus';
+    plus = id + '-plus';
+
+    if (element.style.display == '' || element.style.display == 'block') {
         element.style.display = 'none';
-    else
+
+        document.getElementById(minus).hidden = 'hidden';
+        document.getElementById(plus).removeAttribute('hidden');
+        }
+    else {
         element.style.display = 'block';
+
+        document.getElementById(minus).removeAttribute('hidden');
+        document.getElementById(plus).hidden = 'hidden';
+        }
 
     return;
 }
+
+function TogglePageHelp() {
+    if (document.getElementById('PageHelp').style.display == '' || document.getElementById('PageHelp').style.display == 'block') {
+        document.getElementById('PageHelp').style.display = 'none';
+        document.getElementById('NoPageHelp').style.display = 'block';
+        }
+    else {
+        document.getElementById('PageHelp').style.display = 'block';
+        document.getElementById('NoPageHelp').style.display = 'none';
+        }
+
+    return;
+}
+
 
 function UnSetCBs(my) {
     var children, firstnode, i;

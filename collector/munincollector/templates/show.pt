@@ -7,9 +7,9 @@
     <meta name="keywords" content="python web application" />
     <meta name="description" content="pyramid web application" />
     <link rel="shortcut icon" href="${request.static_url('munincollector:static/favicon.ico')}" />
-    <link rel="stylesheet" href="${request.static_url('munincollector:static/pylons.css')}" type="text/css" media="screen" charset="utf-8" />
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen">
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen">
+    <link rel="stylesheet" href="${request.static_url('munincollector:static/mc.css')}" type="text/css" media="screen" charset="utf-8" />
     <script type="text/javascript" src="${request.static_url('munincollector:static/show.js')}"></script>
 
     <!--[if lte IE 6]>
@@ -32,21 +32,43 @@ window.onload = function() {
 
 
 <body>
-    <div id="middle" class="middle align-center">
-        <p class="app-welcome">
-            <span class="app-name">Munin-Collector:</span> An application to collect and present statistics.
-            <!-- <br>${str(request.params)} -->
-        </p>
-    </div><!--id="middle"-->
-
     <div id="content" class="bottom">
         <form onsubmit="FormSubmit('submit');" id=ShowByHostForm>
 
             <input type="hidden" id="h2" name="h2" value="${Options['h2']['value']}" />
             <input type="hidden" id="h3" name="h3" value="${Options['h3']['value']}" />
 
-            <h2 onclick="ToggleDisplay('graph-section');">Show graphs (${len(Selections)})</h2>
+            <h2 onclick="ToggleDisplay('graph-section');">
+                <img src="${request.static_url('munincollector:static/plus.svg')}" id='graph-section-plus' hidden />
+                <img src="${request.static_url('munincollector:static/minus.svg')}" id='graph-section-minus' />
+                Graphs (${len(Selections)})
+            </h2>
+
             <div id="graph-section">    
+                <table>
+                    <tr>
+                        <td width=15px></td>
+                        <td>
+                            <div id="NoPageHelp">    
+                               <img src="${request.static_url('munincollector:static/help.svg')}" onclick="TogglePageHelp();" /> Click for help.
+                            </div><!-- id="NoPageHelp"-->
+
+                            <div id="PageHelp" style="display:none">    
+                                <img src="${request.static_url('munincollector:static/minus.svg')}" onclick="TogglePageHelp();" /> Notes:
+                                <ul>
+                                    <li> <img src="${request.static_url('munincollector:static/plus.svg')}" /> Click to show the hidden section. Use the checkboxes under the "All Domains" or "All Plugins" sections to choose the resources for which graphs are to be displayed. </li>
+                                    <li> <img src="${request.static_url('munincollector:static/minus.svg')}" /> Click to hide a section. </li>
+                                    <li> <img src="${request.static_url('munincollector:static/oneway_left.svg')}" /> When visible beside an option, a value may be entered. Click to disable the option entry field and use the default value. </li>
+                                    <li> <img src="${request.static_url('munincollector:static/noentry.svg')}" /> When visible beside an option, no value may be entered, the default value will be used. Click to enable the option entry field. </li>
+                                    <li> Use the "Change Order" button to switch between "All Domains" and "All Plugins" order for both the resource lists and the order in which the graphs are displayed. </li>
+                                    <li> Integers within brackets indicate the number of items within a section or the number of items selected. </li>
+                                    <li> Also, since the graph section can be very long, clicking on any graph will hide the entire section. </li>
+                                </ul>
+                            </div><!-- id="PageHelp"-->
+                        </td>
+                    </tr>
+                </table>
+
                 <div tal:condition="Options['if']['value']=='CSV'">
                     <div tal:repeat="csv Selections">
                         &nbsp; &nbsp; &nbsp;
@@ -66,39 +88,29 @@ window.onload = function() {
                 </div>
             </div><!-- id="graph-section"-->
 
-            <h2>Make Selections:</h2>
+            <h2>Resource Selection:</h2>
 
             <input id="B1" onclick="ChangeOrder();" type="button" value="Change Order"/>
             <input id="B2" onclick="FormReset();" type="button" value="Reset Selections"/>
-            <input id="B3" type="submit" value="Refresh selected resources (n)"/>
+            <input id="B3" type="submit" value="Show Graphs (n)"/>
 
             <div id="SelectionSection">    
                 <div id="OrderByPlugin">    
-                    <span onclick="ToggleDisplay('AllPlugins');">
-                        All Plugins
-                        (${len(PT.keys())})
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                    </span>
+                    <img src="${request.static_url('munincollector:static/plus.svg')}" id='AllPlugins-plus' onclick="ToggleDisplay('AllPlugins');" />
+                    <img src="${request.static_url('munincollector:static/minus.svg')}" id='AllPlugins-minus' onclick="ToggleDisplay('AllPlugins');" hidden />
+                    All Plugins
+                    (${len(PT.keys())})
 
                     <div style="display:none" id="AllPlugins">
                         <ul class="links">
                             <li tal:repeat="plugin (sorted(PT.keys()))">
                                 &nbsp; &nbsp; &nbsp;
+                                <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='s${PX.index(plugin)}-plus' onclick="ToggleDisplay('s${PX.index(plugin)}');" />
+                                <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='s${PX.index(plugin)}-minus' onclick="ToggleDisplay('s${PX.index(plugin)}');" hidden />
                                 <input onclick="ToggleChildCBs('${PX.index(plugin)}');" id="${PX.index(plugin)}" type="checkbox" />
-                                <span onclick="ToggleDisplay('s${PX.index(plugin)}');">
-                                    ${plugin}
-                                    <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid plugin">(${len(PT[plugin][mgid].keys())})</span>
-                                    <span tal:condition="len(PT[plugin].keys())>1">(${len(PT[plugin].keys())})</span>
-                                </span>
-                                <span onclick="ToggleDisplay('AllPlugins');">
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                </span>
+                                ${plugin}
+                                <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid plugin">(${len(PT[plugin][mgid].keys())})</span>
+                                <span tal:condition="len(PT[plugin].keys())>1">(${len(PT[plugin].keys())})</span>
 
                                     <div tal:condition="len(PT[plugin].keys())<2">
                                         <div tal:define="mgid plugin" style="display:none" id="s${PX.index(plugin)}">    
@@ -106,17 +118,11 @@ window.onload = function() {
                                                 <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
                                                     &nbsp; &nbsp; &nbsp;
                                                     &nbsp; &nbsp; &nbsp;
+                                                    <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}-plus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" />
+                                                    <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}-minus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" hidden />
                                                     <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
-                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
-                                                        ${domain}
-                                                        (${len(PT[plugin][mgid][domain])})
-                                                    </span>
-                                                    <span onclick="ToggleDisplay('AllPlugins');">
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    </span>
+                                                    ${domain}
+                                                    (${len(PT[plugin][mgid][domain])})
 
                                                         <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
                                                             <ul class="links">
@@ -124,16 +130,9 @@ window.onload = function() {
                                                                     &nbsp; &nbsp; &nbsp;
                                                                     &nbsp; &nbsp; &nbsp;
                                                                     &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp;
                                                                     <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
-                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
-                                                                        ${host}
-                                                                    </span>
-                                                                    <span onclick="ToggleDisplay('AllPlugins');">
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    </span>
+                                                                    ${host}
 
                                                                 </li>
                                                             </ul>
@@ -150,17 +149,11 @@ window.onload = function() {
                                                 <li tal:repeat="mgid (sorted(PT[plugin].keys()))">
                                                     &nbsp; &nbsp; &nbsp;
                                                     &nbsp; &nbsp; &nbsp;
+                                                    <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}-plus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}');" />
+                                                    <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}-minus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}');" hidden />
                                                     <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}');" id="${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
-                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}');">
-                                                        ${mgid}
-                                                        (${len(PT[plugin][mgid].keys())})
-                                                    </span>
-                                                    <span onclick="ToggleDisplay('AllPlugins');">
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                    </span>
+                                                    ${mgid}
+                                                    (${len(PT[plugin][mgid].keys())})
 
                                                         <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}">    
                                                             <ul class="links">
@@ -168,17 +161,11 @@ window.onload = function() {
                                                                     &nbsp; &nbsp; &nbsp;
                                                                     &nbsp; &nbsp; &nbsp;
                                                                     &nbsp; &nbsp; &nbsp;
+                                                                    <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}-plus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" />
+                                                                    <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}-minus' onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" hidden />
                                                                     <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
-                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
-                                                                        ${domain}
-                                                                        (${len(PT[plugin][mgid][domain])})
-                                                                    </span>
-                                                                    <span onclick="ToggleDisplay('AllPlugins');">
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                    </span>
+                                                                    ${domain}
+                                                                    (${len(PT[plugin][mgid][domain])})
 
                                                                         <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
                                                                             <ul class="links">
@@ -187,16 +174,9 @@ window.onload = function() {
                                                                                     &nbsp; &nbsp; &nbsp;
                                                                                     &nbsp; &nbsp; &nbsp;
                                                                                     &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp;
                                                                                     <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
-                                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
-                                                                                        ${host}
-                                                                                    </span>
-                                                                                    <span onclick="ToggleDisplay('AllPlugins');">
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    </span>
+                                                                                    ${host}
 
                                                                                 </li>
                                                                             </ul>
@@ -217,71 +197,55 @@ window.onload = function() {
                 </div><!-- id="OrderByPlugin" -->
 
                 <div style="display:none" id="OrderByDomain">    
-                    <span onclick="ToggleDisplay('AllDomains');">
-                        All Domains
-                        (${len(DT.keys())})
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                    </span>
+                    <img src="${request.static_url('munincollector:static/plus.svg')}" id='AllDomains-plus' onclick="ToggleDisplay('AllDomains');" />
+                    <img src="${request.static_url('munincollector:static/minus.svg')}" id='AllDomains-minus' onclick="ToggleDisplay('AllDomains');" hidden />
+                    All Domains
+                    (${len(DT.keys())})
 
                     <div style="display:none" id="AllDomains">
                         <ul class="links">
                             <li tal:repeat="domain (sorted(DT.keys()))">
                                 &nbsp; &nbsp; &nbsp;
+                                <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='sx${DX.index(domain)}-plus' onclick="ToggleDisplay('sx${DX.index(domain)}');" />
+                                <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='sx${DX.index(domain)}-minus' onclick="ToggleDisplay('sx${DX.index(domain)}');" hidden />
                                 <input onclick="ToggleChildCBs('x${DX.index(domain)}');" id="x${DX.index(domain)}" type="checkbox" />
-                                <span onclick="ToggleDisplay('sx${DX.index(domain)}');">
-                                    ${domain}
-                                    (${len(DT[domain].keys())})
-                                </span>
-                                <span onclick="ToggleDisplay('AllDomains');">
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                </span>
+                                ${domain}
+                                (${len(DT[domain].keys())})
 
                                     <div style="display:none" id="sx${DX.index(domain)}">    
                                         <ul class="links">
                                             <li tal:repeat="host sorted(DT[domain].keys())">
                                                 &nbsp; &nbsp; &nbsp;
                                                 &nbsp; &nbsp; &nbsp;
+                                                <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='sx${DX.index(domain)}.${HX.index(host)}-plus' onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');" />
+                                                <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='sx${DX.index(domain)}.${HX.index(host)}-minus' onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');" hidden />
                                                 <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}');" id="x${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
-                                                <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
-                                                    ${host}
-                                                    (${len(DT[domain][host].keys())})
-                                                </span>
-                                                <span onclick="ToggleDisplay('AllDomains');">
-                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                </span>
+                                                ${host}
+                                                (${len(DT[domain][host].keys())})
 
                                                     <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}">    
                                                         <ul class="links">
                                                             <li tal:repeat="plugin sorted(DT[domain][host].keys())">
-                                                                &nbsp; &nbsp; &nbsp;
-                                                                &nbsp; &nbsp; &nbsp;
-                                                                &nbsp; &nbsp; &nbsp;
-                                                                <input tal:condition="len(DT[domain][host][plugin])<2" tal:define="mgid plugin" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
-                                                                <span tal:condition="len(DT[domain][host][plugin])<2" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
+
+                                                                <span tal:condition="len(DT[domain][host][plugin])<2">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp;
+                                                                    <input tal:define="mgid plugin" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
                                                                     ${plugin}
                                                                 </span>
 
-                                                                <input tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}" type="checkbox" />
-                                                                <span tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
+                                                                <span tal:condition="len(DT[domain][host][plugin])>1">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    <img src="${request.static_url('munincollector:static/plus.svg')}" height="12" width="12" id='sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}-plus' onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" />
+                                                                    <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}-minus' onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" hidden />
+                                                                    <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}" type="checkbox" />
                                                                     ${plugin}
-                                                                    <span tal:condition="len(DT[domain][host][plugin])>1">(${len(DT[domain][host][plugin])})</span>
-                                                                </span>
+                                                                    (${len(DT[domain][host][plugin])})
 
-                                                                <span onclick="ToggleDisplay('AllDomains');">
-                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                </span>
 
                                                                     <div tal:condition="len(DT[domain][host][plugin])>1">
                                                                         <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}">    
@@ -291,20 +255,14 @@ window.onload = function() {
                                                                                     &nbsp; &nbsp; &nbsp;
                                                                                     &nbsp; &nbsp; &nbsp;
                                                                                     &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp;
                                                                                     <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
-                                                                                    <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
-                                                                                        ${mgid}
-                                                                                    </span>
-                                                                                    <span onclick="ToggleDisplay('AllDomains');">
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-                                                                                    </span>
+                                                                                    ${mgid}
 
                                                                             </li>
                                                                         </ul>
                                                                     </div>
+                                                                </span>
 
                                                             </li>
                                                         </ul>
@@ -324,52 +282,110 @@ window.onload = function() {
 
             <h2>Options:</h2>
             <div id="options-section">    
-                 <p>Click a label to enable or disable the corresponding option; double-click for option help.</p>
                  <div id="left">
-                    <br><span onclick="EnableDisable('ta','ta');" ondblclick="OptionHelp('Start Time: Specifies the origin for the \'x\' axis. If omitted, the value will be calculated from the Time Range.');">Start Time</span>
-
-                    <br><span onclick="EnableDisable('tr','tr');" ondblclick="OptionHelp('Time Range: Specifies the number of hours represented by the \'x\' axis. The default value is 30, but a decimal value in the range of .5 to 100000 can be specified. If an Start Time is not specified, a relative start time will be calculated by subtracting the Time Range from the current time.');">Time Range</span>
-
-                    <br><span onclick="EnableDisable('to','to');" ondblclick="OptionHelp('Timeout: Specifies the number of seconds before graphs and the display are to be refreshed. The default value is 300, but a decimal value in the range of 60 to 3600 can be specified.');">Time Out</span>
-
+                    <br>Start Time
+                    <br>Time Range
+                    <br>Time Out
                     <br>
-                    <br><span onclick="EnableDisable('ht','ht');" ondblclick="OptionHelp('Height: Specifies the height of the graph in pixels. The default value is 100, but a decimal value in the range of 100 to 2400 can be specified.');">Height</span>
-
-                    <br><span onclick="EnableDisable('wd','wd');" ondblclick="OptionHelp('Width: Specifies the width of the graph in pixels. The default value is 300, but a decimal value in the range of 100 to 2400 can be specified.');">Width</span>
-
-                    <br><span onclick="EnableDisable('ft','ft');" ondblclick="OptionHelp('Title Font Size: Specifies the size of the fonts to be used for the graph title. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Title Font Size</span>
-                    <br><span onclick="EnableDisable('fa','fa');" ondblclick="OptionHelp('Axis Font Size: Specifies the size of the fonts to be used for the unit markers on the \'X\' and \'Y\' axes. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Axis Font Size</span>
-                    <br><span onclick="EnableDisable('fv','fv');" ondblclick="OptionHelp('Vertical Label Font Size: Specifies the size of the fonts to be used for the \'Y\' axis label. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Vertical Label Font Size</span>
-                    <br><span onclick="EnableDisable('fs','fs');" ondblclick="OptionHelp('Legend and Statistics Font Size: Specifies the size of the fonts to be used for both the graph\'s legend and the graph\'s statistics. The default value is 0, but a decimal value in the range of 0 to 32 can be specified. Specifying a value less then 6 disables statistics and they will not be displayed on the graphs. Specifying a value of 0 will display no statistics but the legend will use font size 8.');">Statistics Font Size</span>
-                    <br><span onclick="EnableDisable('gc','gc');" ondblclick="OptionHelp('Graph Display Columns: Specifies the number of graphs in a row to be displayed on the web page. The default value is 2, but a decimal value in the range of 1 to 24 can be specified.');">Graph Display Columns</span>
-
+                    <br>Height
+                    <br>Width
+                    <br>Title Font Size
+                    <br>Axis Font Size
+                    <br>Vertical Label Font Size
+                    <br>Statistics Font Size
+                    <br>Graph Display Columns
                     <br>
-                    <br><span onclick="EnableDisable('gt','gt');" ondblclick="OptionHelp('Title: Specify a title text string to be used for all graphs generated. By default, a unique graph title is defined by the originating Munin plugin.');">Title</span>
-
+                    <br>Title
                     <br>
-                    <br><span ondblclick="OptionHelp('Image Fromat: Default is PNG.');">Image Format</span>
+                    <br>Graph Format
 
                 </div>
 
                 <div id="right">
-                    <br><input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Start Time: Specifies the origin for the \'x\' axis. If omitted, the value will be calculated by subtracting \'Time Range\' from the current time.'
+                            );"/>
+                        <input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ta-en" onclick="EnableDisable('ta','ta');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ta-ne" onclick="EnableDisable('ta','ta');" hidden />
                         <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
                         <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
-                    <br><input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Time Range: Specifies the number of hours represented by the \'x\' axis. The default value is 30, but a decimal value in the range of .5 to 100000 can be specified. If an Start Time is not specified, a relative start time will be calculated by subtracting the Time Range from the current time.'
+                            );"/>
+                        <input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="tr-en" onclick="EnableDisable('tr','tr');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="tr-ne" onclick="EnableDisable('tr','tr');" hidden />
                         <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
                         <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
-                    <br><input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
-                    <br>
-                    <br><input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />
-                    <br><input type="text" id="wd" name="${Options['wd']['disabled']}" value="${Options['wd']['value']}" size=8 />
-                    <br><input type="text" id="ft" name="${Options['ft']['disabled']}" value="${Options['ft']['value']}" size=8 />
-                    <br><input type="text" id="fa" name="${Options['fa']['disabled']}" value="${Options['fa']['value']}" size=8 />
-                    <br><input type="text" id="fv" name="${Options['fv']['disabled']}" value="${Options['fv']['value']}" size=8 />
-                    <br><input type="text" id="fs" name="${Options['fs']['disabled']}" value="${Options['fs']['value']}" size=8 />
-                    <br><input type="text" id="gc" name="${Options['gc']['disabled']}" value="${Options['gc']['value']}" size=8 />
-                    <br>
-                    <br><input type="text" id="gt" name="${Options['gt']['disabled']}" value="${Options['gt']['value']}" size=48 />
-                    <br><br>
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Timeout: Specifies the number of seconds before graphs and the display are to be refreshed. A decimal value in the range of 60 to 3600 can be specified. NB: Although a default value of 300 seconds is provided, the timeout function is not activated unless the input field is enabled.'
+                            );"/>
+                        <input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="to-en" onclick="EnableDisable('to','to');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="to-ne" onclick="EnableDisable('to','to');" hidden />
+                        <br>
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Height: Specifies the height of the graph in pixels. The default value is 100, but a decimal value in the range of 100 to 2400 can be specified.'
+                            );"/>
+                        <input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ht-en" onclick="EnableDisable('ht','ht');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ht-ne" onclick="EnableDisable('ht','ht');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Width: Specifies the width of the graph in pixels. The default value is 300, but a decimal value in the range of 100 to 2400 can be specified.'
+                            );"/>
+                        <input type="text" id="wd" name="${Options['wd']['disabled']}" value="${Options['wd']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="wd-en" onclick="EnableDisable('wd','wd');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="wd-ne" onclick="EnableDisable('wd','wd');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Title Font Size: Specifies the size of the fonts to be used for the graph title. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                            );"/>
+                        <input type="text" id="ft" name="${Options['ft']['disabled']}" value="${Options['ft']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ft-en" onclick="EnableDisable('ft','ft');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ft-ne" onclick="EnableDisable('ft','ft');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Axis Font Size: Specifies the size of the fonts to be used for the unit markers on the \'X\' and \'Y\' axes. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                            );"/>
+                        <input type="text" id="fa" name="${Options['fa']['disabled']}" value="${Options['fa']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fa-en" onclick="EnableDisable('fa','fa');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fa-ne" onclick="EnableDisable('fa','fa');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Vertical Label Font Size: Specifies the size of the fonts to be used for the \'Y\' axis label. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                            );"/>
+                        <input type="text" id="fv" name="${Options['fv']['disabled']}" value="${Options['fv']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fv-en" onclick="EnableDisable('fv','fv');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fv-ne" onclick="EnableDisable('fv','fv');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Legend and Statistics Font Size: Specifies the size of the fonts to be used for both the graph\'s legend and the graph\'s statistics. The default value is 0, but a decimal value in the range of 0 to 32 can be specified. Specifying a value less then 6 disables statistics and they will not be displayed on the graphs. Specifying a value of 0 will display no statistics but the legend will use font size 8.'
+                            );"/>
+                        <input type="text" id="fs" name="${Options['fs']['disabled']}" value="${Options['fs']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fs-en" onclick="EnableDisable('fs','fs');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fs-ne" onclick="EnableDisable('fs','fs');" hidden />
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Graph Display Columns: Specifies the number of graphs in a row to be displayed on the web page. The default value is 2, but a decimal value in the range of 1 to 24 can be specified.'
+                            );"/>
+                        <input type="text" id="gc" name="${Options['gc']['disabled']}" value="${Options['gc']['value']}" size=8 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gc-en" onclick="EnableDisable('gc','gc');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gc-ne" onclick="EnableDisable('gc','gc');" hidden />
+                        <br>
+
+                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                            'Title: Specify a title text string to be used for all graphs generated. By default, a unique graph title is defined by the originating Munin plugin.'
+                            );"/>
+                        <input type="text" id="gt" name="${Options['gt']['disabled']}" value="${Options['gt']['value']}" size=48 />
+                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gt-en" onclick="EnableDisable('gt','gt');" />
+                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gt-ne" onclick="EnableDisable('gt','gt');" hidden />
+                        <br><br>
+
                         <div tal:condition="Options['if']['value']=='PNG'">
                             <input type="radio" name="if" value="PNG" checked/>PNG
                             <input type="radio" name="if" value="SVG"/>SVG
@@ -394,12 +410,6 @@ window.onload = function() {
 
         </form>
     </div><!--id="content"-->
-
-    <br><br><br><br>
-
-    <div id="footer">
-        <div class="footer">&copy; Copyright 2011, University of Victoria.</div>
-    </div>
 </body>
 </html>
 

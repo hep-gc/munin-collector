@@ -1,7 +1,0 @@
-#
-# cron-job for munin-node-reporter
-#
-
-MAILTO=
-
-3,8,13,18,23,28,33,38,43,48,53,58 * * * *     root test -x /usr/sbin/munin-node-reporter && /usr/sbin/munin-node-reporter

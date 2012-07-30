@@ -51,8 +51,8 @@ body h6{font-family:"NeutonRegular","Lucida Grande",Lucida,Verdana,sans-serif;fo
 .bottom{padding-top:50px;}
 #col1{width:175px;float:left;padding-right:25px;}
 #col2{width:175px;float:right;padding-left:25px;}
-#left{width:340px;float:left;padding-right:25px;}
-#right{width:360px;float:right;padding-left:25px;}
+#left{width:300px;float:left;padding-right:25px;}
+#right{width:400px;float:right;padding-left:25px;}
 .align-left{text-align:left;}
 .align-right{text-align:right;}
 .align-center{text-align:center;}
