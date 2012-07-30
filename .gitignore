@@ -1,4 +1,4 @@
-build/
-dist/
+collector/build/
+collector/dist/
 *.backup
 *.pyc
