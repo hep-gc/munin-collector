@@ -1,4 +1,0 @@
-Munin-Collector README
-
-
-
