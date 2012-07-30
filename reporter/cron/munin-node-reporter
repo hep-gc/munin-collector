@@ -4,4 +4,4 @@
 
 MAILTO=
 
-3,8,13,18,23,28,33,38,43,48,53,58 * * * *     root test -x /usr/local/sbin/munin-node-reporter && /usr/local/sbin/munin-node-reporter
+2,7,12,17,22,27,32,37,42,47,52,57 * * * *     root test -x /usr/local/sbin/munin-node-reporter && /usr/local/sbin/munin-node-reporter
