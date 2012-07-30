@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+# Use this utility to cleanup obsolete image sub-directories created by the show function of
+# munin-collector. It should be run by cron under the munin user's uid.
+from subprocess import PIPE, Popen, STDOUT
+import ConfigParser
+import os
+import time
+
+os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
+
+def StrToInt( str ):
+# convert the given string to an integer.
+    try:
+        result = int(str)
+    except ValueError:
+        result = 0
+    return result
+
+def main():
+    # Read munin-collector configuration file to determine the location of the images directory.
+    if os.environ.has_key('MUNIN_COLLECTOR_CONF'):
+        ConfigurationFile = os.environ['MUNIN_COLLECTOR_CONF']
+    else:
+        ConfigurationFile = '/etc/munin/munin-collector.conf'
+
+    if not os.path.exists(ConfigurationFile):
+        print "Configuration file '%s' does not exist." % ConfigurationFile
+        quit()
+    else:
+        config_file = ConfigParser.ConfigParser()
+
+        try:
+            config_file.read(ConfigurationFile)
+        except IOError:
+            print "Configuration file problem: There was a " \
+            "problem reading %s. Check that it is readable," \
+            "and that it exists. " % ConfigurationFile
+            quit()
+        except ConfigParser.ParsingError:
+            print "Configuration file problem: Couldn't " \
+            "parse your file. Check for spaces before or after variables."
+            quit()
+        except:
+            print "Configuration file problem: There is something wrong with " \
+            "your config file."
+            quit()
+
+        if config_file.has_option("munin-collector", "ImageDir"):
+            ImageDir = config_file.get("munin-collector", "ImageDir")
+        else:
+            print "Configuration file did not specify a path for 'ImageDir'."
+            quit()
+
+    # Delete empty sub-directories or sub-directories that haven't been used for a day.
+    Now = time.time()
+    print 'munin-collector-clean-images starting.'
+
+    p = Popen(['ls', ImageDir], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = p.communicate()
+    if stderr == '':
+        UserDirs = stdout.splitlines()
+
+        for UserDir in UserDirs:
+            DeleteDir = False
+            p = Popen(['ls', '-lt', '--time-style=+%s', ImageDir + '/' + UserDir], stdout=PIPE, stderr=PIPE)
+            stdout, stderr = p.communicate()
+            if stderr == '':
+                UserFiles = stdout.splitlines()
+
+                if len(UserFiles) > 1:
+                    words = UserFiles[1].split()
+                    if Now - StrToInt(words[5]) > 86400:
+                        Reason = 'newest file older than one day.'
+                        DeleteDir = True
+                else:
+                    Reason = 'empty directory.'
+                    DeleteDir = True
+
+            if DeleteDir:
+                print 'Deleting obsolete image directory "' + ImageDir + '/' + UserDir + '" - ' + Reason
+                p = Popen(['rm', '-rf', ImageDir + '/' + UserDir], stdout=PIPE, stderr=PIPE)
+                stdout, stderr = p.communicate()
+
+    print 'munin-collector-clean-images completed.'
+main()

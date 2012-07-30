@@ -1,0 +1,405 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:tal="http://xml.zope.org/namespaces/tal">
+
+<head>
+    <title>Munin-Collector Display Metrics</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+    <meta name="keywords" content="python web application" />
+    <meta name="description" content="pyramid web application" />
+    <link rel="shortcut icon" href="${request.static_url('munincollector:static/favicon.ico')}" />
+    <link rel="stylesheet" href="${request.static_url('munincollector:static/pylons.css')}" type="text/css" media="screen" charset="utf-8" />
+    <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen">
+    <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen">
+    <script type="text/javascript" src="${request.static_url('munincollector:static/show.js')}"></script>
+
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" href="${request.static_url('munincollector:static/ie6.css')}" type="text/css" media="screen" charset="utf-8" />
+    <![endif]-->
+
+<script type="text/javascript">
+window.onload = function() {
+    SetCBs();
+    CountCBs();
+    DisableDisabled();
+    document.getElementById('ta').value = TimeConvert(document.getElementById('ta').value, 'date');
+
+    if (document.getElementById("to").disabled == false && document.getElementById("to").value > 0) {
+        var timeout = setTimeout("FormSubmit('TimeOut')", document.getElementById("to").value * 1000);
+        }
+}
+</script>
+</head>
+
+
+<body>
+    <div id="middle" class="middle align-center">
+        <p class="app-welcome">
+            <span class="app-name">Munin-Collector:</span> An application to collect and present statistics.
+            <!-- <br>${str(request.params)} -->
+        </p>
+    </div><!--id="middle"-->
+
+    <div id="content" class="bottom">
+        <form onsubmit="FormSubmit('submit');" id=ShowByHostForm>
+
+            <input type="hidden" id="h2" name="h2" value="${Options['h2']['value']}" />
+            <input type="hidden" id="h3" name="h3" value="${Options['h3']['value']}" />
+
+            <h2 onclick="ToggleDisplay('graph-section');">Show graphs (${len(Selections)})</h2>
+            <div id="graph-section">    
+                <div tal:condition="Options['if']['value']=='CSV'">
+                    <div tal:repeat="csv Selections">
+                        &nbsp; &nbsp; &nbsp;
+                        <a href="${request.host_url}/${csv[1]}">${csv[0]}</a>
+                    </div>
+                </div>
+                <div tal:condition="Options['if']['value']!='CSV'">
+                    <table cellspacing="10">
+                        <div tal:repeat="graph Selections">
+                            <tr tal:condition="repeat.graph.index%Options['gc']['value']==0"/>
+                            <td>
+                                <span onclick="ToggleDisplay('graph-section');">${graph[0]}</span>
+                                <br/><img onclick="ToggleDisplay('graph-section');" src="${request.host_url}/${graph[1]}"/>
+                            </td>
+                        </div>
+                    </table>
+                </div>
+            </div><!-- id="graph-section"-->
+
+            <h2>Make Selections:</h2>
+
+            <input id="B1" onclick="ChangeOrder();" type="button" value="Change Order"/>
+            <input id="B2" onclick="FormReset();" type="button" value="Reset Selections"/>
+            <input id="B3" type="submit" value="Refresh selected resources (n)"/>
+
+            <div id="SelectionSection">    
+                <div id="OrderByPlugin">    
+                    <span onclick="ToggleDisplay('AllPlugins');">
+                        All Plugins
+                        (${len(PT.keys())})
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                    </span>
+
+                    <div style="display:none" id="AllPlugins">
+                        <ul class="links">
+                            <li tal:repeat="plugin (sorted(PT.keys()))">
+                                &nbsp; &nbsp; &nbsp;
+                                <input onclick="ToggleChildCBs('${PX.index(plugin)}');" id="${PX.index(plugin)}" type="checkbox" />
+                                <span onclick="ToggleDisplay('s${PX.index(plugin)}');">
+                                    ${plugin}
+                                    <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid plugin">(${len(PT[plugin][mgid].keys())})</span>
+                                    <span tal:condition="len(PT[plugin].keys())>1">(${len(PT[plugin].keys())})</span>
+                                </span>
+                                <span onclick="ToggleDisplay('AllPlugins');">
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                </span>
+
+                                    <div tal:condition="len(PT[plugin].keys())<2">
+                                        <div tal:define="mgid plugin" style="display:none" id="s${PX.index(plugin)}">    
+                                            <ul class="links">
+                                                <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
+                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                        ${domain}
+                                                        (${len(PT[plugin][mgid][domain])})
+                                                    </span>
+                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    </span>
+
+                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
+                                                            <ul class="links">
+                                                                <li tal:repeat="host (sorted(PT[plugin][mgid][domain]))">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                        ${host}
+                                                                    </span>
+                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    </span>
+
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    <div tal:condition="len(PT[plugin].keys())>1">
+                                        <div style="display:none" id="s${PX.index(plugin)}">    
+                                            <ul class="links">
+                                                <li tal:repeat="mgid (sorted(PT[plugin].keys()))">
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp;
+                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}');" id="${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}');">
+                                                        ${mgid}
+                                                        (${len(PT[plugin][mgid].keys())})
+                                                    </span>
+                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                    </span>
+
+                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}">    
+                                                            <ul class="links">
+                                                                <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp;
+                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}" type="checkbox" />
+                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                        ${domain}
+                                                                        (${len(PT[plugin][mgid][domain])})
+                                                                    </span>
+                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                    </span>
+
+                                                                        <div style="display:none" id="s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}">    
+                                                                            <ul class="links">
+                                                                                <li tal:repeat="host (sorted(PT[plugin][mgid][domain]))">
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    <input onclick="ToggleChildCBs('${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}');" id="${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                                                    <span onclick="ToggleDisplay('s${PX.index(plugin)}.${MX.index(mgid)}.${DX.index(domain)}');">
+                                                                                        ${host}
+                                                                                    </span>
+                                                                                    <span onclick="ToggleDisplay('AllPlugins');">
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    </span>
+
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
+
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                
+                           </li>
+                        </ul>
+                    </div><!-- id="AllPlugins" -->
+                </div><!-- id="OrderByPlugin" -->
+
+                <div style="display:none" id="OrderByDomain">    
+                    <span onclick="ToggleDisplay('AllDomains');">
+                        All Domains
+                        (${len(DT.keys())})
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                    </span>
+
+                    <div style="display:none" id="AllDomains">
+                        <ul class="links">
+                            <li tal:repeat="domain (sorted(DT.keys()))">
+                                &nbsp; &nbsp; &nbsp;
+                                <input onclick="ToggleChildCBs('x${DX.index(domain)}');" id="x${DX.index(domain)}" type="checkbox" />
+                                <span onclick="ToggleDisplay('sx${DX.index(domain)}');">
+                                    ${domain}
+                                    (${len(DT[domain].keys())})
+                                </span>
+                                <span onclick="ToggleDisplay('AllDomains');">
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                </span>
+
+                                    <div style="display:none" id="sx${DX.index(domain)}">    
+                                        <ul class="links">
+                                            <li tal:repeat="host sorted(DT[domain].keys())">
+                                                &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp;
+                                                <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}');" id="x${DX.index(domain)}.${HX.index(host)}" type="checkbox" />
+                                                <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
+                                                    ${host}
+                                                    (${len(DT[domain][host].keys())})
+                                                </span>
+                                                <span onclick="ToggleDisplay('AllDomains');">
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                </span>
+
+                                                    <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}">    
+                                                        <ul class="links">
+                                                            <li tal:repeat="plugin sorted(DT[domain][host].keys())">
+                                                                &nbsp; &nbsp; &nbsp;
+                                                                &nbsp; &nbsp; &nbsp;
+                                                                &nbsp; &nbsp; &nbsp;
+                                                                <input tal:condition="len(DT[domain][host][plugin])<2" tal:define="mgid plugin" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                                <span tal:condition="len(DT[domain][host][plugin])<2" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}');">
+                                                                    ${plugin}
+                                                                </span>
+
+                                                                <input tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}" type="checkbox" />
+                                                                <span tal:condition="len(DT[domain][host][plugin])>1" onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
+                                                                    ${plugin}
+                                                                    <span tal:condition="len(DT[domain][host][plugin])>1">(${len(DT[domain][host][plugin])})</span>
+                                                                </span>
+
+                                                                <span onclick="ToggleDisplay('AllDomains');">
+                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                </span>
+
+                                                                    <div tal:condition="len(DT[domain][host][plugin])>1">
+                                                                        <div style="display:none" id="sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}">    
+                                                                            <ul class="links">
+                                                                                <li tal:repeat="mgid sorted(DT[domain][host][plugin])">
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp;
+                                                                                    <input onclick="ToggleChildCBs('x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}');" id="x${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}.${MX.index(mgid)}" type="checkbox" />
+                                                                                    <span onclick="ToggleDisplay('sx${DX.index(domain)}.${HX.index(host)}.${PX.index(plugin)}');">
+                                                                                        ${mgid}
+                                                                                    </span>
+                                                                                    <span onclick="ToggleDisplay('AllDomains');">
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                                                                                    </span>
+
+                                                                            </li>
+                                                                        </ul>
+                                                                    </div>
+
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                           </li>
+                        </ul>
+                    </div><!-- id="AllDomains" -->
+                </div><!-- id="OrderByDomain" -->
+            </div><!-- id="SelectionSection" -->
+
+            <br>
+
+            <h2>Options:</h2>
+            <div id="options-section">    
+                 <p>Click a label to enable or disable the corresponding option; double-click for option help.</p>
+                 <div id="left">
+                    <br><span onclick="EnableDisable('ta','ta');" ondblclick="OptionHelp('Start Time: Specifies the origin for the \'x\' axis. If omitted, the value will be calculated from the Time Range.');">Start Time</span>
+
+                    <br><span onclick="EnableDisable('tr','tr');" ondblclick="OptionHelp('Time Range: Specifies the number of hours represented by the \'x\' axis. The default value is 30, but a decimal value in the range of .5 to 100000 can be specified. If an Start Time is not specified, a relative start time will be calculated by subtracting the Time Range from the current time.');">Time Range</span>
+
+                    <br><span onclick="EnableDisable('to','to');" ondblclick="OptionHelp('Timeout: Specifies the number of seconds before graphs and the display are to be refreshed. The default value is 300, but a decimal value in the range of 60 to 3600 can be specified.');">Time Out</span>
+
+                    <br>
+                    <br><span onclick="EnableDisable('ht','ht');" ondblclick="OptionHelp('Height: Specifies the height of the graph in pixels. The default value is 100, but a decimal value in the range of 100 to 2400 can be specified.');">Height</span>
+
+                    <br><span onclick="EnableDisable('wd','wd');" ondblclick="OptionHelp('Width: Specifies the width of the graph in pixels. The default value is 300, but a decimal value in the range of 100 to 2400 can be specified.');">Width</span>
+
+                    <br><span onclick="EnableDisable('ft','ft');" ondblclick="OptionHelp('Title Font Size: Specifies the size of the fonts to be used for the graph title. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Title Font Size</span>
+                    <br><span onclick="EnableDisable('fa','fa');" ondblclick="OptionHelp('Axis Font Size: Specifies the size of the fonts to be used for the unit markers on the \'X\' and \'Y\' axes. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Axis Font Size</span>
+                    <br><span onclick="EnableDisable('fv','fv');" ondblclick="OptionHelp('Vertical Label Font Size: Specifies the size of the fonts to be used for the \'Y\' axis label. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.');">Vertical Label Font Size</span>
+                    <br><span onclick="EnableDisable('fs','fs');" ondblclick="OptionHelp('Legend and Statistics Font Size: Specifies the size of the fonts to be used for both the graph\'s legend and the graph\'s statistics. The default value is 0, but a decimal value in the range of 0 to 32 can be specified. Specifying a value less then 6 disables statistics and they will not be displayed on the graphs. Specifying a value of 0 will display no statistics but the legend will use font size 8.');">Statistics Font Size</span>
+                    <br><span onclick="EnableDisable('gc','gc');" ondblclick="OptionHelp('Graph Display Columns: Specifies the number of graphs in a row to be displayed on the web page. The default value is 2, but a decimal value in the range of 1 to 24 can be specified.');">Graph Display Columns</span>
+
+                    <br>
+                    <br><span onclick="EnableDisable('gt','gt');" ondblclick="OptionHelp('Title: Specify a title text string to be used for all graphs generated. By default, a unique graph title is defined by the originating Munin plugin.');">Title</span>
+
+                    <br>
+                    <br><span ondblclick="OptionHelp('Image Fromat: Default is PNG.');">Image Format</span>
+
+                </div>
+
+                <div id="right">
+                    <br><input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
+                        <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                        <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+                    <br><input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
+                        <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                        <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+                    <br><input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
+                    <br>
+                    <br><input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />
+                    <br><input type="text" id="wd" name="${Options['wd']['disabled']}" value="${Options['wd']['value']}" size=8 />
+                    <br><input type="text" id="ft" name="${Options['ft']['disabled']}" value="${Options['ft']['value']}" size=8 />
+                    <br><input type="text" id="fa" name="${Options['fa']['disabled']}" value="${Options['fa']['value']}" size=8 />
+                    <br><input type="text" id="fv" name="${Options['fv']['disabled']}" value="${Options['fv']['value']}" size=8 />
+                    <br><input type="text" id="fs" name="${Options['fs']['disabled']}" value="${Options['fs']['value']}" size=8 />
+                    <br><input type="text" id="gc" name="${Options['gc']['disabled']}" value="${Options['gc']['value']}" size=8 />
+                    <br>
+                    <br><input type="text" id="gt" name="${Options['gt']['disabled']}" value="${Options['gt']['value']}" size=48 />
+                    <br><br>
+                        <div tal:condition="Options['if']['value']=='PNG'">
+                            <input type="radio" name="if" value="PNG" checked/>PNG
+                            <input type="radio" name="if" value="SVG"/>SVG
+                            <input type="radio" name="if" value="CSV"/>CSV
+                        </div>
+
+                        <div tal:condition="Options['if']['value']=='SVG'">
+                            <input type="radio" name="if" value="PNG"/>PNG
+                            <input type="radio" name="if" value="SVG" checked/>SVG
+                            <input type="radio" name="if" value="CSV"/>CSV
+                        </div>
+
+                        <div tal:condition="Options['if']['value']=='CSV'">
+                            <input type="radio" name="if" value="PNG"/>PNG
+                            <input type="radio" name="if" value="SVG"/>SVG
+                            <input type="radio" name="if" value="CSV" checked/>CSV
+                        </div>
+
+                    <br><br><br><br>
+                </div>
+            </div><!-- id="options-section"-->
+
+        </form>
+    </div><!--id="content"-->
+
+    <br><br><br><br>
+
+    <div id="footer">
+        <div class="footer">&copy; Copyright 2011, University of Victoria.</div>
+    </div>
+</body>
+</html>
+
