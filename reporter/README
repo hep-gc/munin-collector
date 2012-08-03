@@ -17,7 +17,7 @@ Installation:
 5. Configure munin-node-reporter: edit "/usr/local/etc/munin-node-reporter.conf" and set
    "CollectorURL" tag to point to your collector.
 6. Get cron to run munin-node-redis and munin-node-reporter: sudo service crond restart
-7. Is it running? Wait five minutes and try: redis-cli keys '*' - is should give:
+7. Is it running? Wait five minutes and try: redis-cli keys '*' - it should give:
 
    1) "+Plugin:if_eth0"
    2) "+Plugin:cpu"
