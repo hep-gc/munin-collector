@@ -1,3 +1,10 @@
+This directory contains two function to gather and report statistics from a server:
+
+o munin-node-redis executes munin-node plugins and saves the results in the redis keyword store.
+o munin-node-reporter reads the redis keyword store and sends the information to the collector.
+
+Both functions are run periodically by cron.  
+
 Installation:
 
 1. Install prerequisites: sudo yum install redis munin-node
