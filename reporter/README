@@ -3,7 +3,7 @@ Installation:
 1. Install prerequisites: sudo yum install redis munin-node
 2. Configure redis to start at boot: sudo chkconfig redis on
 3. Start redis: sudo service redis start
-4. Install package: sudo ./INSTALL.sh
+4. Install package: sudo ./INSTALL
    This will also configure the munin plugins to record just the cpu, memory, network,
    and filesystem usage. For more information on configuring plugins, see the munin-node
    documentation.
@@ -11,3 +11,18 @@ Installation:
    "CollectorURL" tag to point to your collector.
 6. Get cron to run munin-node-redis and munin-node-reporter: sudo service crond restart
 7. Is it running? Wait five minutes and try: redis-cli keys '*' - is should give:
+
+   1) "+Plugin:if_eth0"
+   2) "+Plugin:cpu"
+   3) "127.0.0.1"
+   4) "+Plugin:memory"
+   5) "+Plugin:df"
+   6) "hostname"
+
+   and "redis-cli lrange 127.0.0.1 0 -1" should give:
+
+   1) "cpu 1344033902\\user.value 3817\\nice.value 0\\system.value 280\\idle.value 189648\\iowait.value 318\\irq.value 51\\softirq.value 17\\steal.value 0\\"
+   2) "df 1344033902\\_dev_vda1.value 64.888015253249\\_dev_vdb.value 0.0685869263959959\\_dev_shm.value 0\\cvmfs2.value 0.0181749125370764\\"
+   3) "if_eth0 1344033902\\down.value 6110735\\up.value 349779\\"
+   4) "memory 1344033902\\slab.value 17940480\\swap_cache.value 0\\page_tables.value 5206016\\vmalloc_used.value 245760\\apps.value 55091200\\free.value 690118656\\buffers.value 17805312\\cached.value 264646656\\swap.value 0\\committed.value 367616000\\mapped.value 17448960\\active.value 141926400\\inactive.value 180150272\\"
+   5) "<no-more> <plugin>\\<data>"
