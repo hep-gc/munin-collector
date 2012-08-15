@@ -7,7 +7,7 @@
 #
 #       Check that the current directory is where the munin-reporter package resides.
 #
-	if (!(-e 'bin/munin-node-reporter')) {
+	if (!(-e 'sbin/munin-node-reporter')) {
 		print "INSTALL.sh: You need to change directory to where the munin-reporter package resides.\n";
 		exit;
 	}
