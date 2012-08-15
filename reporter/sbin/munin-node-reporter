@@ -2,14 +2,10 @@
 	use Digest::SHA1  qw(sha1 sha1_hex sha1_base64);
 	use URI::Escape;
 
-	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+    $Config{'LogLevel'} = 3;
+    @LogLevels = ('None', 'Error', 'Warning', 'Info', 'Debug');
 
-    # Ensure only one munin-node-reporter task running.
-    @x = `ps --no-headers  -fC munin-node-reporter`;
-    if ($#x > 0) {
-        print "There is more than one munin-reporter-node running. This one is terminating.\n";
-        exit;
-    }
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
 
     # Read the munin-node-reporter configuration file.
     if (defined($ENV{'MUNIN_NODE_REPORTER_CONF'})) {
@@ -20,11 +16,13 @@
         }
 
     if (! -e $ConfigurationFile) {
-        print "Configuration file '$ConfigurationFile' does not exist.\n";
+        Logger(1, "Configuration file '$ConfigurationFile' does not exist.");
         exit;
     }
 
-    $Config{'ReporterIP'} = `hostname`; chop($Config{'ReporterIP'});
+    # Set default values.
+    $Config{'ReporterIP'} = 'localhost';
+    $Config{'ReporterPort'} = 6379;
     $Config{'BlockSize'} = 100;
 
     @config = `cat $ConfigurationFile`;
@@ -43,19 +41,37 @@
         }
     }
 
+    # Perform any config file variable substitutions.
     foreach $opt_key (keys(%Config)) {
         foreach $var_key (keys(%ConfigVar)) {
             $Config{$opt_key} =~ s/$var_key/$ConfigVar{$var_key}/g;
         }
     }
 
-    # Read munin plugin configurations from the redis database and send them to the configured collector.
-	($hostname) = RedisCli('get hostname');
-    if ($hostname =~ /[^a-zA-Z0-9\.\_\-]/) {
-        print "Invalid hostname '$hostname', terminating.\n";
+    Logger(3, "Starting."); 
+    Logger(4, "Configuration:");
+    Logger(4, "   CollectorURL    : $Config{'CollectorURL'}");
+    Logger(4, "   ReporterIP      : $Config{'ReporterIP'}");
+    Logger(4, "   ReporterPort    : $Config{'ReporterPort'}");
+    Logger(4, "   ReporterStackID : $Config{'ReporterStackID'}");
+    Logger(4, "   BlockSize       : $Config{'BlockSize'}");
+    Logger(4, "   LogLevel        : $Config{'LogLevel'}");
+
+    # Ensure only one munin-node-reporter task running.
+    @x = `ps --no-headers  -fC munin-node-reporter`;
+    if ($#x > 0) {
+        Logger(2, "There is more than one munin-reporter-node running. This one is terminating.");
         exit;
     }
 
+    # Read munin plugin configurations from the redis database and send them to the configured collector.
+	($hostname) = RedisCli('get hostname');
+    if ($hostname =~ /[^a-zA-Z0-9\.\_\-]/) {
+        Logger(1, "Invalid hostname '$hostname', terminating.");
+        exit;
+    }
+
+    Logger(4, "Processing plugin configurations.");
 	@keys = RedisCli('keys "*"');
 	foreach $key (@keys) {
 	    next if $key !~ /^\+/;
@@ -78,19 +94,20 @@
 			if ($x[0] ne "OK\n") {
 				chop($x[0]);
                 if ($x[0] ne "config already saved.\n") {
-                    print "Plugin '$plugin' config already saved.\n";
+                    Logger(4, "Plugin '$plugin' config already saved.");
                 } else {
-                    print "Error saving plugin config: $x[0]\n";
-                    print "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri\n";
+                    Logger(2, "Error saving plugin config: $x[0]");
+                    Logger(2, "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri");
                 }
 				last;
 			}
 			$count++;
 		}
-		print "Configure plugin=$plugin, saved.\n" if $count > 0;
+		Logger(3, "Configure plugin=$plugin, saved.") if $count > 0;
 	}
 
 	# Send queued data to Munin-Collector server.
+    Logger(4, "Sending queued data to collector.");
     $start_block_time = time(); $total_time = 0; $total_plugins = 0;
     while (1) {
         # Determine stack block size to process.
@@ -99,6 +116,7 @@
         $stack_count = $Config{'BlockSize'} if $stack_count > $Config{'BlockSize'};
 
         # Read and queue stacked data.
+        Logger(4, "Reading queued data.");
         undef %Queue;
         for ($stack_ix=0; $stack_ix<$stack_count; $stack_ix++) {
             ($plugin_data) = RedisCli("lindex $Config{'ReporterStackID'} $stack_ix");
@@ -131,6 +149,7 @@
         }
 
         # Send queued data.
+        Logger(4, "Sending data.");
         foreach $plugin (sort(keys(%Queue))) {
             foreach $mgid (sort(keys(%{$Queue{$plugin}}))) {
                 foreach $key (sort(keys(%{$Queue{$plugin}{$mgid}}))) {
@@ -143,11 +162,12 @@
     				@x = `curl -X PUT '$Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values_uri' 2>/dev/null`;
     				if ($x[0] ne "OK\n") {
     					chop($x[0]);
-    					print "Error saving plugin values: $x[0]\n";
-    					print "Command was: curl -X PUT $Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values\n";
+    					Logger(2, "Error saving plugin values: $x[0]");
+    					Logger(2, "Command was: curl -X PUT $Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values");
                         if ($x[0] eq "munin-collector-value: bad input keys.") {
                             next;
                         } else {
+			    Logger(1, "Aborting, having processed $total_plugins plugins in $total_time seconds.");
                             exit;
                         }
     				}
@@ -157,20 +177,21 @@
 
 
         # Delete processed data.
+        Logger(4, "Deleting sent data.");
         for ($stack_ix=0; $stack_ix<$stack_count; $stack_ix++) {
     		@x = RedisCli("lpop $Config{'ReporterStackID'}");
         }
 
         $end_block_time = time();
         $elapsed_time = $end_block_time - $start_block_time;
-        print "Block completed; processed $stack_count plugins in $elapsed_time seconds.\n"; 
+        Logger(3, "Block completed; processed $stack_count plugins in $elapsed_time seconds."); 
 
         $total_time += $elapsed_time;
         $total_plugins += $stack_count;
         $start_block_time = $end_block_time;
     }
 
-    print "All blocks completed; processed $total_plugins plugins in $total_time seconds.\n"; 
+    Logger(3, "All blocks completed; processed $total_plugins plugins in $total_time seconds."); 
 
 #
 # Issue redis-cli command and deal with newlines or not (depends on redis-cli version - very inconsistenet).
@@ -178,7 +199,7 @@
 sub RedisCli() {
     my $ix;
     my $redis_cmd = shift();
-    my @x = `redis-cli -h $Config{'ReporterIP'} $redis_cmd`;
+    my @x = `redis-cli -h $Config{'ReporterIP'} -p $Config{'ReporterPort'} $redis_cmd`;
 
     for ($ix=0; $ix<=$#x; $ix++) {
         $x[$ix] =~ s/\n$//;
@@ -187,3 +208,14 @@ sub RedisCli() {
     return @x;
 }
 
+#
+# Write logging messages.
+#
+sub Logger() {
+    my $loglevel = shift() * 1;
+    my $logmsg = shift();
+
+    if ($Config{'LogLevel'} >= $loglevel) {
+        system("logger -t munin-node-reporter -- '[$$] $LogLevels[$loglevel]: $logmsg'");
+    }
+}
