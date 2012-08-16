@@ -192,6 +192,7 @@ def main(global_config, **settings):
     if stderr == '':
         hashs = hashs.splitlines()
         for hash in hashs:
+            print '===============> ' + hash
             hash_file = open(PluginDir + '/config/' + hash, 'r')
             lines = hash_file.readlines()
             hash_file.close()
@@ -219,6 +220,7 @@ def main(global_config, **settings):
                 if not PluginConfigs['config'][hash].has_key(mgid):
                     PluginConfigs['config'][hash][mgid] = {}
 
+                print '============================================> ' + str(len(key_value))
                 PluginConfigs['config'][hash][mgid][kprefix + key_value[0]] = key_value[1]
 
                 # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
@@ -281,17 +283,19 @@ def main(global_config, **settings):
                 if not mgid in PluginConfigs['MgidXref']:
                     PluginConfigs['MgidXref'] += [mgid]
 
+# Obsolete:
+#    config.add_view('munincollector.views.ShowByHost.DisplayMetrics')
+#    config.add_view('munincollector.views.show.DisplayMetrics',
+#                    context='munincollector:resources.Root',
+#                    renderer='munincollector:templates/show.pt')
+
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})
     config.add_settings({'PluginConfigs': PluginConfigs})
-#    config.add_view('munincollector.views.ShowByHost.DisplayMetrics')
     config.add_view('munincollector.views.show.DisplayMetrics')
     config.add_view('munincollector.views.config.ReadConfig', name='config')
     config.add_view('munincollector.views.value.ReadValue', name='value')
     config.add_view('munincollector.views.debug.ShowValues', name='debug')
-#    config.add_view('munincollector.views.show.DisplayMetrics',
-#                    context='munincollector:resources.Root',
-#                    renderer='munincollector:templates/show.pt')
     config.add_static_view('static', 'munincollector:static')
     return config.make_wsgi_app()
 
