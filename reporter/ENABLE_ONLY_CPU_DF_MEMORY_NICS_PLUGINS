@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+	system('rm -f /etc/munin/plugins/*');
+	system('(cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/cpu)');
+	system('(cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/df)');
+	system('(cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/memory)');
+
+    @nics = `/sbin/ifconfig | awk '/^[a-zA-Z0-9]/ && !/lo|virbr0/  {print \$1}'`;
+    foreach $nic (@nics) {
+        chop($nic);
+        system("(cd /etc/munin/plugins; ln -s /usr/share/munin/plugins/if_uvic_ if_$nic)");
+
+    }
