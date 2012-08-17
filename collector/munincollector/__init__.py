@@ -192,7 +192,6 @@ def main(global_config, **settings):
     if stderr == '':
         hashs = hashs.splitlines()
         for hash in hashs:
-            print '===============> ' + hash
             hash_file = open(PluginDir + '/config/' + hash, 'r')
             lines = hash_file.readlines()
             hash_file.close()
@@ -205,12 +204,6 @@ def main(global_config, **settings):
 
                 if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
                     mgid = key_value[1]
-                    pp = re.search('\.', mgid)
-                    if pp:
-                        [mgid, kprefix] = mgid.split('.', 1)
-                        kprefix = kprefix + '_'
-                    else:
-                        kprefix = ''
                     continue
 
                 if not PluginConfigs['config'].has_key(hash):
@@ -220,13 +213,12 @@ def main(global_config, **settings):
                 if not PluginConfigs['config'][hash].has_key(mgid):
                     PluginConfigs['config'][hash][mgid] = {}
 
-                print '============================================> ' + str(len(key_value))
-                PluginConfigs['config'][hash][mgid][kprefix + key_value[0]] = key_value[1]
+                PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
 
                 # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
                 words = key_value[0].split(".")
                 if len(words) == 2:
-                    ds = kprefix + words[0]
+                    ds = words[0]
                     if not PluginConfigs['datasource'].has_key(hash):
                         PluginConfigs['datasource'][hash] = {}
 
@@ -292,10 +284,11 @@ def main(global_config, **settings):
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})
     config.add_settings({'PluginConfigs': PluginConfigs})
-    config.add_view('munincollector.views.show.DisplayMetrics')
+    config.add_view('munincollector.views.alive.Check', name='alive')
     config.add_view('munincollector.views.config.ReadConfig', name='config')
-    config.add_view('munincollector.views.value.ReadValue', name='value')
     config.add_view('munincollector.views.debug.ShowValues', name='debug')
+    config.add_view('munincollector.views.show.DisplayMetrics')
+    config.add_view('munincollector.views.value.ReadValue', name='value')
     config.add_static_view('static', 'munincollector:static')
     return config.make_wsgi_app()
 
