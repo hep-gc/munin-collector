@@ -92,10 +92,10 @@
             $config_uri = uri_escape("$config"); 
             @x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$hostname&plugin=$plugin&hash=$hash&mgid=$mgid&sequence=$count&data=$config_uri' 2>/dev/null`;
             if ($x[0] ne "OK\n") {
-                chop($x[0]);
-                if ($x[0] ne "config already saved.\n") {
-                    Logger(4, "Plugin '$plugin' config already saved.");
+                if ($x[0] eq "munin-collector-config: already saved.\n") {
+                    Logger(4, "Configure plugin=$plugin, saved already.");
                 } else {
+                    chop($x[0]);
                     Logger(2, "Error saving plugin config: $x[0]");
                     Logger(2, "Command was: host=$hostname, plugin=$plugin, hash=$hash, mgid=$mgid, sequence=$count, data=$config_uri");
                 }
@@ -103,7 +103,12 @@
             }
             $count++;
         }
-        Logger(3, "Configure plugin=$plugin, saved.") if $count > 0;
+
+        if ($count > 0) {
+            $config_uri = uri_escape('.'); 
+            @x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$hostname&plugin=$plugin&hash=$hash&mgid=$mgid&sequence=$count&data=$config_uri' 2>/dev/null`;
+            Logger(3, "Configure plugin=$plugin, saved.");
+        }
     }
 
     # Send queued data to Munin-Collector server.
