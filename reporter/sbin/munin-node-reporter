@@ -131,25 +131,19 @@
 
             $time = $time * 1;
 
-            $mgid = $plugin; $kprefix = '';
+            $mgid = $plugin;
             foreach $item (@plugin_data) {
                 next if length($item) < 1;
                 ($key, $value) = split(/[\s\t\n]+/, $item);
                 if ($key eq 'multigraph') {
-                    if ($value =~ /\./) {
-                        ($mgid, $x) = split(/\./, $value, 2);
-                        $kprefix = $x.'_';
-                    } else {
-                        $mgid = $value;
-                        $kprefix = '';
-                    }
+                    $mgid = $value;
                     next;
                 }
 
                 $key =~ s/\.value//;
 
                 $value = $value * 1;
-                $Queue{$plugin}{$mgid}{$kprefix.$key}{$time} = $value;
+                $Queue{$plugin}{$mgid}{$key}{$time} = $value;
             }
         }
 
