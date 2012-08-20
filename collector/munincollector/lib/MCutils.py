@@ -12,6 +12,96 @@ MuninValueTypes = {
     'COMPUTE': '-e',
     }
 
+def CachePluginConfig (MCconfig, PluginConfigs, hash):
+    # Cache plugin config and datasource lists (stage 2): 
+    #     PluginConfigs['config'][<hash>][<mgid>][<key>] = <value>
+    hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
+    lines = hash_file.readlines()
+    hash_file.close()
+    for line in lines:
+        line = line.strip()
+        if line == '' or line == '(nil)':
+            continue
+
+        key_value = line.split(' ', 1)
+
+        if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
+            mgid = key_value[1]
+            continue
+
+        if not PluginConfigs['config'].has_key(hash):
+            PluginConfigs['config'][hash] = {}
+            PluginConfigs['resolved'][hash] = False
+
+        if not PluginConfigs['config'][hash].has_key(mgid):
+            PluginConfigs['config'][hash][mgid] = {}
+
+        PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+
+        # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
+        words = key_value[0].split(".")
+        if len(words) == 2:
+            ds = words[0]
+            if not PluginConfigs['datasource'].has_key(hash):
+                PluginConfigs['datasource'][hash] = {}
+
+            if not PluginConfigs['datasource'][hash].has_key(mgid):
+                PluginConfigs['datasource'][hash][mgid] = []
+
+            if not ds in PluginConfigs['datasource'][hash][mgid]:
+                PluginConfigs['datasource'][hash][mgid] += [ds]
+
+def CachePluginLink (MCconfig, PluginConfigs, host, plugin, hash):
+    # Cache plugin links (stage 1): 
+    #     PluginConfigs['links'][<host>][<plugin>] = <hash>
+    if not PluginConfigs['links'].has_key(host):
+        PluginConfigs['links'][host] = {}
+
+    PluginConfigs['links'][host][plugin] = hash
+
+def CachePluginXref(MCconfig, PluginConfigs):
+    # Build domain and plugin trees and cross references used for graph selection (stage 3).
+    for host in PluginConfigs['links']:
+        domain = GetDomain(host)
+        for plugin in PluginConfigs['links'][host]:
+            for mgid in PluginConfigs['config'][PluginConfigs['links'][host][plugin]]:
+                if not PluginConfigs['DomainTree'].has_key(domain):
+                    PluginConfigs['DomainTree'][domain] = {}
+
+                if not PluginConfigs['DomainTree'][domain].has_key(host):
+                    PluginConfigs['DomainTree'][domain][host] = {}
+
+                if not PluginConfigs['DomainTree'][domain][host].has_key(plugin):
+                    PluginConfigs['DomainTree'][domain][host][plugin] = []
+
+                if not mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
+                    PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+
+                if not PluginConfigs['PluginTree'].has_key(plugin):
+                    PluginConfigs['PluginTree'][plugin] = {}
+
+                if not PluginConfigs['PluginTree'][plugin].has_key(mgid):
+                    PluginConfigs['PluginTree'][plugin][mgid] = {}
+
+                if not PluginConfigs['PluginTree'][plugin][mgid].has_key(domain):
+                    PluginConfigs['PluginTree'][plugin][mgid][domain] = []
+
+                if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
+                    PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
+
+                if not domain in PluginConfigs['DomainXref']:
+                    PluginConfigs['DomainXref'] += [domain]
+
+                if not host in PluginConfigs['HostXref']:
+                    PluginConfigs['HostXref'] += [host]
+
+                if not plugin in PluginConfigs['PluginXref']:
+                    PluginConfigs['PluginXref'] += [plugin]
+
+                if not mgid in PluginConfigs['MgidXref']:
+                    PluginConfigs['MgidXref'] += [mgid]
+
+
 # Scan AllowedDomains. Return 'True', if the specified host is within an allowed domain. Otherwise return 'False'.
 def CheckAllowedDomains( AllowedDomains, HostAddr ):
     for ix in range(len(AllowedDomains)):

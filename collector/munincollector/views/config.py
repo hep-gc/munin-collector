@@ -39,54 +39,16 @@ class ReadConfig(object):
             if data.strip() == '(nil)':
                 return Response('munin-collector-config: the data field is empty ("(nil)").\n')
 
+            if data.strip() == '.':
+                MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
+                MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
+                MCutils.CachePluginXref(MCconfig, PluginConfigs)
+                return Response('OK\n')
+
             p = Popen(['mkdir', '-p',  MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
             if stderr == '':
                 if sequence < 1:
-                    domain = MCutils.GetDomain(host)
-                    # Update the domain and plugin trees used for graph selection.
-                    if not PluginConfigs['DomainTree'].has_key(domain):
-                        PluginConfigs['DomainTree'][domain] = {}
-
-                    if not PluginConfigs['DomainTree'][domain].has_key(host):
-                        PluginConfigs['DomainTree'][domain][host] = {}
-
-                    if not PluginConfigs['DomainTree'][domain][host].has_key(plugin):
-                        PluginConfigs['DomainTree'][domain][host][plugin] = []
-
-                    if not mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
-                        PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
-
-                    if not PluginConfigs['PluginTree'].has_key(plugin):
-                        PluginConfigs['PluginTree'][plugin] = {}
-
-                    if not PluginConfigs['PluginTree'][plugin].has_key(mgid):
-                        PluginConfigs['PluginTree'][plugin][mgid] = {}
-
-                    if not PluginConfigs['PluginTree'][plugin][mgid].has_key(domain):
-                        PluginConfigs['PluginTree'][plugin][mgid][domain] = []
-
-                    if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
-                        PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
-
-                    if not domain in PluginConfigs['DomainXref']:
-                        PluginConfigs['DomainXref'] += [domain]
-
-                    if not host in PluginConfigs['HostXref']:
-                        PluginConfigs['HostXref'] += [host]
-
-                    if not plugin in PluginConfigs['PluginXref']:
-                        PluginConfigs['PluginXref'] += [plugin]
-
-                    if not mgid in PluginConfigs['MgidXref']:
-                        PluginConfigs['MgidXref'] += [mgid]
-
-                    # Set link variable.
-                    if not PluginConfigs['links'].has_key(host):
-                        PluginConfigs['links'][host] = {}
-                      
-                    PluginConfigs['links'][host][plugin] = hash
-
                     # Lock around file operations.
                     lock = lockfile.FileLock(MCconfig['LockDir'] + '/' + hash)
                     try:
@@ -108,7 +70,7 @@ class ReadConfig(object):
                     # First reporter creates config hash.
                     if os.path.exists(MCconfig['PluginDir'] + '/config/' + hash):
                         lock.release()
-                        return Response('munin-collector-config: config already saved.\n')
+                        return Response('munin-collector-config: already saved.\n')
                     else:
                         p = Popen(['touch', MCconfig['PluginDir'] + '/config/' + hash], stdout=PIPE, stderr=PIPE)
                         stdout, stderr = p.communicate()
@@ -119,31 +81,6 @@ class ReadConfig(object):
                     file.write('pluginname ' + plugin + '\n')
                 file.write(data + '\n')
                 file.close()
-
-                # Set config variable.
-                if (data.strip() != '' and data.split(' ', 1)[0] != 'multigraph'):
-                    if not PluginConfigs['config'].has_key(hash):
-                        PluginConfigs['config'][hash] = {}
-                        PluginConfigs['resolved'][hash] = False
-                                         
-                    if not PluginConfigs['config'][hash].has_key(mgid):
-                        PluginConfigs['config'][hash][mgid] = {}
-                                         
-                    key_value = data.split(' ', 1)
-                    PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
-
-                    # Update datasource variable: PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
-                    words = key_value[0].split('.')
-                    if len(words) == 2:
-                        ds = words[0]
-                        if not PluginConfigs['datasource'].has_key(hash):
-                            PluginConfigs['datasource'][hash] = {}
-                                             
-                        if not PluginConfigs['datasource'][hash].has_key(mgid):
-                            PluginConfigs['datasource'][hash][mgid] = []
-                                             
-                        if not ds in PluginConfigs['datasource'][hash][mgid]:
-                            PluginConfigs['datasource'][hash][mgid] += [ds]
 
                 return Response('OK\n')
             else:
