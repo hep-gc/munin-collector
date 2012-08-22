@@ -70,6 +70,14 @@ class ReadConfig(object):
                     # First reporter creates config hash.
                     if os.path.exists(MCconfig['PluginDir'] + '/config/' + hash):
                         lock.release()
+
+                        if (not host in PluginConfigs['HostXref'] or \
+                            not plugin in PluginConfigs['PluginXref'] or \
+                            not mgid in PluginConfigs['MgidXref']):
+                                MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
+                                MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
+                                MCutils.CachePluginXref(MCconfig, PluginConfigs)
+
                         return Response('munin-collector-config: already saved.\n')
                     else:
                         p = Popen(['touch', MCconfig['PluginDir'] + '/config/' + hash], stdout=PIPE, stderr=PIPE)

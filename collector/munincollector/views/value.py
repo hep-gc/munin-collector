@@ -112,7 +112,18 @@ class ReadValue(object):
                 return Response('OK\n')
 
             else:
-                return Response('munin-collector-value: bad input keys.\n')
+                if not PluginConfigs['links'].has_key(host):
+                    bad_key = 'bad host parameter.' 
+                elif not PluginConfigs['links'][host].has_key(plugin):
+                    bad_key = 'bad plugin parameter.' 
+                elif not PluginConfigs['config'][PluginConfigs['links'][host][plugin]].has_key(mgid):
+                    bad_key = 'bad mgid parameter.' 
+                elif not key in PluginConfigs['datasource'][PluginConfigs['links'][host][plugin]][mgid]:
+                    bad_key = 'bad key parameter.' 
+                else:
+                    bad_key = 'bad parameter (?).' 
+
+                return Response('munin-collector-value: ' + bad_key + '\n')
         else:
             missing = []
             if not Params.has_key('host'):
