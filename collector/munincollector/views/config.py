@@ -79,7 +79,8 @@ class ReadConfig(object):
                                 need_to_cache = False 
 
                         if need_to_cache:
-                            # Log config for host needed to be cached: print host + ', ' + plugin + ', ' + mgid + '. ++++++++++++++++++++++++++++++++++++++'
+                            # Log config for host needed to be cached:
+                            print host + ', ' + plugin + ', ' + mgid + '. ++++++++++++++++++++++++++++++++++++++'
                             MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
                             MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
                             MCutils.CachePluginXref(MCconfig, PluginConfigs)

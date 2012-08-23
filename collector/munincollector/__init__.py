@@ -3,6 +3,7 @@ from munincollector.resources import Root
 from subprocess import PIPE, Popen, STDOUT
 import ConfigParser
 import MCutils
+import cPickle
 import os
 import re
 
@@ -159,6 +160,27 @@ def main(global_config, **settings):
         }
 
     # Initialize plugin configuration cache.
+
+    if os.path.exists(MCconfig['PluginDir'] + '/pickles/DomainXref'):
+        DomainXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/DomainXref', 'rb') )
+    else:
+        DomainXref = []
+
+    if os.path.exists(MCconfig['PluginDir'] + '/pickles/HostXref'):
+        HostXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/HostXref', 'rb') )
+    else:
+        HostXref = []
+
+    if os.path.exists(MCconfig['PluginDir'] + '/pickles/PluginXref'):
+        PluginXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/PluginXref', 'rb') )
+    else:
+        PluginXref = []
+
+    if os.path.exists(MCconfig['PluginDir'] + '/pickles/MgidXref'):
+        MgidXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/MgidXref', 'rb') )
+    else:
+        MgidXref = []
+
     PluginConfigs = {
         'config': {},
         'datasource': {},
@@ -167,10 +189,10 @@ def main(global_config, **settings):
         'resolved': {},
         'DomainTree': {},
         'PluginTree': {},
-        'DomainXref': [],
-        'HostXref': [],
-        'PluginXref': [],
-        'MgidXref': []
+        'DomainXref': DomainXref,
+        'HostXref': HostXref,
+        'PluginXref': PluginXref,
+        'MgidXref': MgidXref
         }
 
     # Cache plugin links (stage 1): 

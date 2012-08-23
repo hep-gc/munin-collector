@@ -1,4 +1,5 @@
 import os
+import cPickle
 from subprocess import PIPE, Popen, STDOUT
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
@@ -91,15 +92,19 @@ def CachePluginXref(MCconfig, PluginConfigs):
 
                 if not domain in PluginConfigs['DomainXref']:
                     PluginConfigs['DomainXref'] += [domain]
+                    cPickle.dump(PluginConfigs['DomainXref'], open(MCconfig['PluginDir'] + '/pickles/DomainXref', 'wb') )
 
                 if not host in PluginConfigs['HostXref']:
                     PluginConfigs['HostXref'] += [host]
+                    cPickle.dump(PluginConfigs['HostXref'], open(MCconfig['PluginDir'] + '/pickles/HostXref', 'wb') )
 
                 if not plugin in PluginConfigs['PluginXref']:
                     PluginConfigs['PluginXref'] += [plugin]
+                    cPickle.dump(PluginConfigs['PluginXref'], open(MCconfig['PluginDir'] + '/pickles/PluginXref', 'wb') )
 
                 if not mgid in PluginConfigs['MgidXref']:
                     PluginConfigs['MgidXref'] += [mgid]
+                    cPickle.dump(PluginConfigs['MgidXref'], open(MCconfig['PluginDir'] + '/pickles/MgidXref', 'wb') )
 
 
 # Scan AllowedDomains. Return 'True', if the specified host is within an allowed domain. Otherwise return 'False'.
