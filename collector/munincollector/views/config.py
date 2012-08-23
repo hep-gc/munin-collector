@@ -71,12 +71,18 @@ class ReadConfig(object):
                     if os.path.exists(MCconfig['PluginDir'] + '/config/' + hash):
                         lock.release()
 
-                        if (not host in PluginConfigs['HostXref'] or \
-                            not plugin in PluginConfigs['PluginXref'] or \
-                            not mgid in PluginConfigs['MgidXref']):
-                                MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
-                                MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
-                                MCutils.CachePluginXref(MCconfig, PluginConfigs)
+                        # Log config already saved: print host + ', ' + plugin + ', ' + mgid + '. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+
+                        need_to_cache = True 
+                        if PluginConfigs['links'].has_key(host):
+                            if PluginConfigs['links'][host].has_key(plugin):
+                                need_to_cache = False 
+
+                        if need_to_cache:
+                            # Log config for host needed to be cached: print host + ', ' + plugin + ', ' + mgid + '. ++++++++++++++++++++++++++++++++++++++'
+                            MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
+                            MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
+                            MCutils.CachePluginXref(MCconfig, PluginConfigs)
 
                         return Response('munin-collector-config: already saved.\n')
                     else:
