@@ -104,11 +104,7 @@
             $count++;
         }
 
-        if ($count > 0) {
-            $config_uri = uri_escape('.'); 
-            @x = `curl -X PUT '$Config{'CollectorURL'}/config?host=$hostname&plugin=$plugin&hash=$hash&mgid=$mgid&sequence=$count&data=$config_uri' 2>/dev/null`;
-            Logger(3, "Configure plugin=$plugin, saved.");
-        }
+        Logger(3, "Configure plugin=$plugin, saved.") if $count > 0;
     }
 
     # Send queued data to Munin-Collector server.
