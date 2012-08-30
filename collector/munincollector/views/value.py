@@ -2,8 +2,9 @@ from pyramid.response import Response
 from subprocess import PIPE, Popen, STDOUT
 import os
 import re
-#import lockfile
+from stat import *
 import MCutils
+from Globals import Testing
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
@@ -34,6 +35,10 @@ class ReadValue(object):
             key = str(Params['key'])
             values = str(Params['values'])
 
+            MCutils.Logger(MCconfig, 4, 'value', 'Entered, host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values)
+
+            # Verify that the plugin configuration cache is up to date.
+            MCutils.CachePluginCheck(MCconfig, PluginConfigs)
 
             # PluginConfigs['links'][<host>][<plugin>] = <hash>
             # PluginConfigs['config'][<hash>][<mgid>][<key>] = <value>
@@ -43,13 +48,9 @@ class ReadValue(object):
                 PluginConfigs['config'][PluginConfigs['links'][host][plugin]].has_key(mgid) and
                 key in PluginConfigs['datasource'][PluginConfigs['links'][host][plugin]][mgid]):
 
-                PC = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid]
+                MCutils.Logger(MCconfig, 4, 'value', 'Inserting new values into round-robin database (rrd).')
 
-#                lock = lockfile.FileLock(MCconfig['LockDir'] + '/value_update')
-#                try:
-#                    lock.acquire(timeout=270)
-#                except:
-#                    return Response('munin-collector-value: unable to obtain value update file lock.\n')
+                PC = PluginConfigs['config'][PluginConfigs['links'][host][plugin]][mgid]
 
                 rrd_path = MCconfig['DataDir'] + '/' + host + '-' + mgid + '-' + key + MCutils.MuninType(PC, key) + '.rrd'
                 if not os.path.exists(rrd_path): 
@@ -84,7 +85,6 @@ class ReadValue(object):
                     stdout=PIPE, stderr=PIPE)
                     stdout, stderr = p.communicate()
                     if stderr != '':
-#                        lock.release()
                         return Response('munin-collector-value: unable to create rrd file -' + data_source + ' ' + stderr)
 
                 value_list = values.split()
@@ -105,25 +105,28 @@ class ReadValue(object):
 
 
                 if stderr != '':
-#                    lock.release()
                     return Response('munin-collector-value: unable to update rrd file -' + stderr)
 
-#                lock.release()
                 return Response('OK\n')
 
             else:
                 if not PluginConfigs['links'].has_key(host):
-                    bad_key = 'bad host parameter.' 
+                    bad_key = 'bad host parameter' 
                 elif not PluginConfigs['links'][host].has_key(plugin):
-                    bad_key = 'bad plugin parameter.' 
+                    bad_key = 'bad plugin parameter' 
                 elif not PluginConfigs['config'][PluginConfigs['links'][host][plugin]].has_key(mgid):
-                    bad_key = 'bad mgid parameter.' 
+                    bad_key = 'bad mgid parameter' 
                 elif not key in PluginConfigs['datasource'][PluginConfigs['links'][host][plugin]][mgid]:
-                    bad_key = 'bad key parameter.' 
+                    bad_key = 'bad key parameter' 
                 else:
                     bad_key = 'bad parameter (?).' 
 
-                return Response('munin-collector-value: ' + bad_key + '\n')
+                cache_file = open(MCconfig['PluginDir'] + '/config/.last_updated', 'r')
+                last_cache_update = os.fstat(cache_file.fileno())[ST_CTIME]
+                cache_file.close()
+
+                MCutils.Logger(MCconfig, 2, 'value', bad_key + ', host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values + ', cache_time=' + str(PluginConfigs['Timestamp']) + ', config_time=' + str(last_cache_update) + '.')
+                return Response('munin-collector-value: ' + bad_key + '.\n')
         else:
             missing = []
             if not Params.has_key('host'):

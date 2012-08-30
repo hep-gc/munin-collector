@@ -4,6 +4,7 @@ import os
 import re
 import lockfile
 import MCutils
+import time
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
@@ -37,13 +38,8 @@ class ReadConfig(object):
             data = str(Params['data'])
 
             if data.strip() == '(nil)':
+                MCutils.Logger(MCconfig, 2, 'config', 'Returning data field is empty.')
                 return Response('munin-collector-config: the data field is empty ("(nil)").\n')
-
-            if data.strip() == '.':
-                MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
-                MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
-                MCutils.CachePluginXref(MCconfig, PluginConfigs)
-                return Response('OK\n')
 
             p = Popen(['mkdir', '-p',  MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
@@ -54,51 +50,53 @@ class ReadConfig(object):
                     try:
                         lock.acquire(timeout=10)
                     except:
+                        MCutils.Logger(MCconfig, 1, 'config', 'Unable to obtain config file lock.')
                         return Response('munin-collector-config: unable to obtain config file lock.\n')
 
-                    # Create host link to config hash.
-                    p = Popen(['ln', '-s', '-f', 
-                        MCconfig['PluginDir'] + '/config/' + hash, 
-                        MCconfig['PluginDir'] + '/links/' + host + '/' + plugin],
-                        stdout=PIPE, stderr=PIPE)
-                    stdout, stderr = p.communicate()
-                    if stderr != '':
-                        lock.release()
-                        return Response('munin-collector-config: unable to link.\n')
+                    # If it doesn't already exist, create host link to the plugin configuration hash.
+                    if not os.path.exists(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin):
+                        p = Popen(['ln', '-s', '-f', 
+                            MCconfig['PluginDir'] + '/config/' + hash, 
+                            MCconfig['PluginDir'] + '/links/' + host + '/' + plugin],
+                            stdout=PIPE, stderr=PIPE)
 
+                        stdout, stderr = p.communicate()
+                        if stderr != '':
+                            lock.release()
+                            MCutils.Logger(MCconfig, 1, 'config', 'Unable to create config link.')
+                            return Response('munin-collector-config: unable to link.\n')
 
-                    # First reporter creates config hash.
+                        # Update the timestamp.
+                        open(MCconfig['PluginDir'] + '/config/.last_updated', 'w').close()
+
+                        MCutils.Logger(MCconfig, 3, 'config', 'New config link created, host=' + host + ', plugin=' + plugin + '.')
+
+                    # First reporter creates the plugin configuration hash.
                     if os.path.exists(MCconfig['PluginDir'] + '/config/' + hash):
                         lock.release()
-
-                        # Log config already saved: print host + ', ' + plugin + ', ' + mgid + '. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-
-                        need_to_cache = True 
-                        if PluginConfigs['links'].has_key(host):
-                            if PluginConfigs['links'][host].has_key(plugin):
-                                need_to_cache = False 
-
-                        if need_to_cache:
-                            # Log config for host needed to be cached:
-                            print host + ', ' + plugin + ', ' + mgid + '. ++++++++++++++++++++++++++++++++++++++'
-                            MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
-                            MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
-                            MCutils.CachePluginXref(MCconfig, PluginConfigs)
-
+                        MCutils.Logger(MCconfig, 4, 'config', 'Config already saved.')
                         return Response('munin-collector-config: already saved.\n')
                     else:
                         p = Popen(['touch', MCconfig['PluginDir'] + '/config/' + hash], stdout=PIPE, stderr=PIPE)
                         stdout, stderr = p.communicate()
                         lock.release()
+                        MCutils.Logger(MCconfig, 3, 'config', 'New config file created, hash=' + hash + '.')
 
+                # Append new line to configuration file.
                 file = open(MCconfig['PluginDir'] + '/config/' + hash, 'a')
                 if sequence < 1:
                     file.write('pluginname ' + plugin + '\n')
                 file.write(data + '\n')
                 file.close()
 
+                # Update the timestamp.
+                open(MCconfig['PluginDir'] + '/config/.last_updated', 'w').close()
+
+                MCutils.Logger(MCconfig, 4, 'config', 'New line appended to config file.')
+
                 return Response('OK\n')
             else:
+                MCutils.Logger(MCconfig, 1, 'config', 'Unable to create host directory.')
                 return Response('munin-collector-config: unable to create host directory.\n')
         else:
             missing = []
@@ -120,5 +118,6 @@ class ReadConfig(object):
             if not Params.has_key('data'):
                 missing += ['data']
 
+            MCutils.Logger(MCconfig, 2, 'config', 'Returning fields missing, host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', hash=' + hash + ', sequence=' + str(sequence) + ', data=' + data)
             return Response('munin-collector-config: the following required fields are missing: ' + str(missing) +     '\n')
 

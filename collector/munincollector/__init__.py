@@ -3,16 +3,16 @@ from munincollector.resources import Root
 from subprocess import PIPE, Popen, STDOUT
 import ConfigParser
 import MCutils
-import cPickle
 import os
 import re
+from TestIT import TestClass
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
 
     # Read and process our configuration file.
-    ConfigurationFile = '/etc/munin/munin-collector.conf'
+    ConfigurationFile = '/usr/local/etc/munin-collector.conf'
     if not os.path.exists(ConfigurationFile):
         ConfigurationFile = global_config['here'] + '/munincollector/samples/etc/munin/munin-collector.conf'
 
@@ -58,6 +58,12 @@ def main(global_config, **settings):
             LockDir = config_file.get("munin-collector", "LockDir")
         else:
             print "Configuration file did not specify a path for 'LockDir'."
+            quit()
+
+        if config_file.has_option("munin-collector", "LogLevel"):
+            LogLevel = int(config_file.get("munin-collector", "LogLevel"))
+        else:
+            print "Configuration file did not specify a value for 'LogLevel'."
             quit()
 
         if config_file.has_option("munin-collector", "PluginDir"):
@@ -153,80 +159,44 @@ def main(global_config, **settings):
         'DataDir': DataDir,
         'ImageDir': ImageDir,
         'LockDir': LockDir,
+        'LogLevel': LogLevel,
         'PluginDir': PluginDir,
         'AllowedDomains': AllowedDomains,
         'HostAllowed': HostAllowed,
         'Options': Options,
         }
 
+    MCutils.Logger(MCconfig, 3, '__init__', 'Started.')
+    MCutils.Logger(MCconfig, 3, '__init__', 'Configuration:')
+    MCutils.Logger(MCconfig, 3, '__init__', '   AllowedDomains : ' + str(MCconfig['AllowedDomains']))
+    MCutils.Logger(MCconfig, 3, '__init__', '   DataDir        : ' + MCconfig['DataDir'])
+    MCutils.Logger(MCconfig, 3, '__init__', '   HostAllowed    : ' + str(MCconfig['HostAllowed']))
+    MCutils.Logger(MCconfig, 3, '__init__', '   ImageDir       : ' + MCconfig['ImageDir'])
+    MCutils.Logger(MCconfig, 3, '__init__', '   LockDir        : ' + MCconfig['LockDir'])
+    MCutils.Logger(MCconfig, 3, '__init__', '   LogLevel       : ' + str(MCconfig['LogLevel']))
+    MCutils.Logger(MCconfig, 3, '__init__', '   Options        : ' + str(MCconfig['Options']))
+    MCutils.Logger(MCconfig, 3, '__init__', '   PluginDir      : ' + MCconfig['PluginDir'])
+
     # Initialize plugin configuration cache.
-
-    if os.path.exists(MCconfig['PluginDir'] + '/pickles/DomainXref'):
-        DomainXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/DomainXref', 'rb') )
-    else:
-        DomainXref = []
-
-    if os.path.exists(MCconfig['PluginDir'] + '/pickles/HostXref'):
-        HostXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/HostXref', 'rb') )
-    else:
-        HostXref = []
-
-    if os.path.exists(MCconfig['PluginDir'] + '/pickles/PluginXref'):
-        PluginXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/PluginXref', 'rb') )
-    else:
-        PluginXref = []
-
-    if os.path.exists(MCconfig['PluginDir'] + '/pickles/MgidXref'):
-        MgidXref = cPickle.load(open(MCconfig['PluginDir'] + '/pickles/MgidXref', 'rb') )
-    else:
-        MgidXref = []
-
     PluginConfigs = {
         'config': {},
         'datasource': {},
         'hostdomains': {},
         'links': {},
         'resolved': {},
+        'testing': {},
+        'cat': TestClass(),
         'DomainTree': {},
         'PluginTree': {},
-        'DomainXref': DomainXref,
-        'HostXref': HostXref,
-        'PluginXref': PluginXref,
-        'MgidXref': MgidXref
+        'DomainXref': [],
+        'HostXref': [],
+        'PluginXref': [],
+        'MgidXref': [],
+        'Timestamp': 0,
+        'Timestamps': { 's1': [], 's2': [] },
         }
 
-    # Cache plugin links (stage 1): 
-    #     PluginConfigs['links'][<host>][<plugin>] = <hash>
-    hash_offset = len(PluginDir + '/config/')
-    p = Popen(['ls', PluginDir + '/links'], stdout=PIPE, stderr=PIPE)
-    hosts, stderr = p.communicate()
-    if stderr == '':
-        hosts = hosts.splitlines()
-
-        for host in hosts:
-            p = Popen(['ls', '-l', PluginDir + '/links/' + host], stdout=PIPE, stderr=PIPE)
-            links, stderr = p.communicate()
-            if stderr == '':
-                links = links.splitlines()
-
-                for link in links:
-                    words = link.split()
-                    if len(words) >= 11:
-                        plugin = words[8]
-                        hash = words[10][hash_offset:]
-                        MCutils.CachePluginLink(MCconfig, PluginConfigs, host, plugin, hash)
-
-    # Cache plugin config and datasource lists (stage 2): 
-    #     PluginConfigs['config'][<hash>][<mgid>][<key>] = <value>
-    p = Popen(['ls', PluginDir + '/config'], stdout=PIPE, stderr=PIPE)
-    hashes, stderr = p.communicate()
-    if stderr == '':
-        hashes = hashes.splitlines()
-        for hash in hashes:
-            MCutils.CachePluginConfig(MCconfig, PluginConfigs, hash)
-
-    # Build domain and plugin trees and cross references used for graph selection (stage 3).
-    MCutils.CachePluginXref(MCconfig, PluginConfigs)
+    MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
 
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})

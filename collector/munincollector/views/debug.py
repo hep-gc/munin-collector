@@ -66,6 +66,11 @@ class ShowValues(object):
                               '&nbsp&nbsp&nbsp&nbsp' + \
                               host
 
+        # Format the domain cross reference: [domain, ...]
+        S1 = '<br/><br/>PluginConfigs[\'Timestamps\'][\'s1\'] = ' + str(sorted(PluginConfigs['Timestamps']['s1']))
+
+        # Format the domain cross reference: [domain, ...]
+        S2 = '<br/><br/>PluginConfigs[\'Timestamps\'][\'s2\'] = ' + str(sorted(PluginConfigs['Timestamps']['s2']))
 
         # Format the domain cross reference: [domain, ...]
         ix = 0
@@ -107,5 +112,5 @@ class ShowValues(object):
                   mgid
             ix += 1
 
-        return Response(DT + PT + DX + HX + PX + MX + '\n')
+        return Response(DT + PT + S1 + S2 + DX + HX + PX + MX + '\n')
 

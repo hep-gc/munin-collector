@@ -18,6 +18,9 @@ Palette = (
     )
 
 def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
+    # Verify that the plugin configuration cache is up to date.
+    MCutils.CachePluginCheck(MC, PC)
+
     if (plugin in Plugins or
         str(PC['PluginXref'].index(plugin)) + '.' + 
         str(PC['MgidXref'].index(mgid)) + '.' +
