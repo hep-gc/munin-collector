@@ -5,7 +5,6 @@ import ConfigParser
 import MCutils
 import os
 import re
-from TestIT import TestClass
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -184,8 +183,6 @@ def main(global_config, **settings):
         'hostdomains': {},
         'links': {},
         'resolved': {},
-        'testing': {},
-        'cat': TestClass(),
         'DomainTree': {},
         'PluginTree': {},
         'DomainXref': [],
