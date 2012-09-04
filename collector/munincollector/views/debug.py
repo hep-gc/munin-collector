@@ -16,6 +16,36 @@ class ShowValues(object):
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
 
+        # Format the plugin links: {host: {plugin: hash, ... }, ... }
+        PL = '<br/><br/>PluginConfigs[\'links\']:'
+        for host in PluginConfigs['links']:
+            PL += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  host 
+            for plugin in PluginConfigs['links'][host]:
+                PL += '<br/>' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      plugin + ' = ' + PluginConfigs['links'][host][plugin]
+
+        # Format the mgid config: {hash: {mgid: {key: value, ... }, ... }, ... }
+        PC = '<br/><br/>PluginConfigs[\'config\']:'
+        for hash in PluginConfigs['config']:
+            PC += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  hash 
+            for mgid in PluginConfigs['config'][hash]:
+                PC += '<br/>' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      mgid
+                for key in PluginConfigs['config'][hash][mgid]:
+                    PC += '<br/>' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          key + ' = ' + PluginConfigs['config'][hash][mgid][key]
+
         # Format the domain tree: {domain: {host: {plugin: [mgid, ...], ... }, ... }, ... }
         DT = '<br/><br/>PluginConfigs[\'DomainTree\'] ->'
         for domain in PluginConfigs['DomainTree']:
@@ -124,5 +154,5 @@ class ShowValues(object):
                   '&nbsp' + \
                   tr
 
-        return Response(DT + PT + S1 + S2 + DX + HX + PX + MX + TR + '\n')
+        return Response(PL + PC + DT + PT + S1 + S2 + DX + HX + PX + MX + TR + '\n')
 

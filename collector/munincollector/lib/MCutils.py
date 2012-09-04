@@ -133,7 +133,7 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
                         if not ds in PluginConfigs['datasource'][hash][mgid]:
                             PluginConfigs['datasource'][hash][mgid] += [ds]
 
-    Logger(MCconfig, 4, 'MCutils', 'Stage 3: Build domain and plugin trees and cross references used for graph selection')
+    Logger(MCconfig, 4, 'MCutils', 'Stage 3: Build domain and plugin trees')
     for host in PluginConfigs['links']:
         domain = GetDomain(host)
         for plugin in PluginConfigs['links'][host]:
@@ -162,22 +162,23 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
                 if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
                     PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
 
-                for s1 in sorted(PluginConfigs['Timestamps']['s1']):
-                    domain =GetDomain(s1[1])
+    Logger(MCconfig, 4, 'MCutils', 'Stage 4: Build cross references used for graph selection')
+    for s1 in sorted(PluginConfigs['Timestamps']['s1']):
+        domain =GetDomain(s1[1])
 
-                    if not domain in PluginConfigs['DomainXref']:
-                        PluginConfigs['DomainXref'] += [ domain ]
+        if not domain in PluginConfigs['DomainXref']:
+            PluginConfigs['DomainXref'] += [ domain ]
 
-                    if not s1[1] in PluginConfigs['HostXref']:
-                        PluginConfigs['HostXref'] += [ s1[1] ]
+        if not s1[1] in PluginConfigs['HostXref']:
+            PluginConfigs['HostXref'] += [ s1[1] ]
 
-                    if not s1[2] in PluginConfigs['PluginXref']:
-                        PluginConfigs['PluginXref'] += [ s1[2] ]
+        if not s1[2] in PluginConfigs['PluginXref']:
+            PluginConfigs['PluginXref'] += [ s1[2] ]
 
-                for s2 in sorted(PluginConfigs['Timestamps']['s2']):
+    for s2 in sorted(PluginConfigs['Timestamps']['s2']):
 
-                    if not s2[1] in PluginConfigs['MgidXref']:
-                        PluginConfigs['MgidXref'] += [ s2[1] ]
+        if not s2[1] in PluginConfigs['MgidXref']:
+            PluginConfigs['MgidXref'] += [ s2[1] ]
 
 # Scan AllowedDomains. Return 'True', if the specified host is within an allowed domain. Otherwise return 'False'.
 def CheckAllowedDomains( AllowedDomains, HostAddr ):

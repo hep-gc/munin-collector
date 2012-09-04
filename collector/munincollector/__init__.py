@@ -188,7 +188,6 @@ def main(global_config, **settings):
     PluginConfigs = {
         'config': {},
         'datasource': {},
-        'hostdomains': {},
         'links': {},
         'resolved': {},
         'DomainTree': {},
