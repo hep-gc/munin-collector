@@ -431,32 +431,33 @@ class DisplayMetrics(object):
                 for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
                     for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
                         for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                            if (Options['ta']['value'] >= PluginConfigs['TimeRanges'][host + '-' + mgid][0] and \
-                                end_time <= PluginConfigs['TimeRanges'][host + '-' + mgid][1]):
+                            if PluginConfigs['TimeRanges'].has_key(host + '-' + mgid):
+                                if (Options['ta']['value'] >= PluginConfigs['TimeRanges'][host + '-' + mgid][0] and \
+                                    end_time <= PluginConfigs['TimeRanges'][host + '-' + mgid][1]):
 
-                                if not PrunedDomains.has_key(domain):
-                                    PrunedDomains[domain] = {}
+                                    if not PrunedDomains.has_key(domain):
+                                        PrunedDomains[domain] = {}
 
-                                if not PrunedDomains[domain].has_key(host):
-                                    PrunedDomains[domain][host] = {}
+                                    if not PrunedDomains[domain].has_key(host):
+                                        PrunedDomains[domain][host] = {}
 
-                                if not PrunedDomains[domain][host].has_key(plugin):
-                                    PrunedDomains[domain][host][plugin] = []
+                                    if not PrunedDomains[domain][host].has_key(plugin):
+                                        PrunedDomains[domain][host][plugin] = []
 
-                                if not mgid in PrunedDomains[domain][host][plugin]:
-                                    PrunedDomains[domain][host][plugin] += [mgid]
+                                    if not mgid in PrunedDomains[domain][host][plugin]:
+                                        PrunedDomains[domain][host][plugin] += [mgid]
 
-                                if not PrunedPlugins.has_key(plugin):
-                                    PrunedPlugins[plugin] = {}
+                                    if not PrunedPlugins.has_key(plugin):
+                                        PrunedPlugins[plugin] = {}
 
-                                if not PrunedPlugins[plugin].has_key(mgid):
-                                    PrunedPlugins[plugin][mgid] = {}
+                                    if not PrunedPlugins[plugin].has_key(mgid):
+                                        PrunedPlugins[plugin][mgid] = {}
 
-                                if not PrunedPlugins[plugin][mgid].has_key(domain):
-                                    PrunedPlugins[plugin][mgid][domain] = []
+                                    if not PrunedPlugins[plugin][mgid].has_key(domain):
+                                        PrunedPlugins[plugin][mgid][domain] = []
 
-                                if not host in PrunedPlugins[plugin][mgid][domain]:
-                                    PrunedPlugins[plugin][mgid][domain] += [host]
+                                    if not host in PrunedPlugins[plugin][mgid][domain]:
+                                        PrunedPlugins[plugin][mgid][domain] += [host]
 
             if CheckedBoxes[0] == 'p':
                 for plugin in sorted(PrunedPlugins.keys()):
