@@ -112,5 +112,17 @@ class ShowValues(object):
                   mgid
             ix += 1
 
-        return Response(DT + PT + S1 + S2 + DX + HX + PX + MX + '\n')
+        # Format time ranges
+#       TR = '<br/><br/>TimeRanges:' + str(PluginConfigs['TimeRanges'])
+        TR = '<br/><br/>TimeRanges:'
+        for tr in sorted(PluginConfigs['TimeRanges'].keys()):
+            TR += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  '%12d' % PluginConfigs['TimeRanges'][tr][0] + \
+                  '&nbsp' + \
+                  '%12d' % PluginConfigs['TimeRanges'][tr][1] + \
+                  '&nbsp' + \
+                  tr
+
+        return Response(DT + PT + S1 + S2 + DX + HX + PX + MX + TR + '\n')
 

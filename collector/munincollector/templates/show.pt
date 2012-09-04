@@ -56,11 +56,11 @@ window.onload = function() {
                             <div id="PageHelp" style="display:none">    
                                 <img src="${request.static_url('munincollector:static/minus.svg')}" onclick="TogglePageHelp();" /> Notes:
                                 <ul>
-                                    <li> <img src="${request.static_url('munincollector:static/plus.svg')}" /> Click to show the hidden section. Use the checkboxes under the "All Domains" or "All Plugins" sections to choose the resources for which graphs are to be displayed. </li>
+                                    <li> <img src="${request.static_url('munincollector:static/plus.svg')}" /> Click to show the hidden section. Use the checkboxes under the "Filtered/All Domains" or "Filtered/All Plugins" sections to choose the resources for which graphs are to be displayed. </li>
                                     <li> <img src="${request.static_url('munincollector:static/minus.svg')}" /> Click to hide a section. </li>
                                     <li> <img src="${request.static_url('munincollector:static/oneway_left.svg')}" /> When visible beside an option, a value may be entered. Click to disable the option entry field and use the default value. </li>
                                     <li> <img src="${request.static_url('munincollector:static/noentry.svg')}" /> When visible beside an option, no value may be entered, the default value will be used. Click to enable the option entry field. </li>
-                                    <li> Use the "Change Order" button to switch between "All Domains" and "All Plugins" order for both the resource lists and the order in which the graphs are displayed. </li>
+                                    <li> Use the "Change Order" button to switch between "Filtered/All Domains" and "Filtered/All Plugins" order for both the resource lists and the order in which the graphs are displayed. </li>
                                     <li> Integers within brackets indicate the number of items within a section or the number of items selected. </li>
                                     <li> Also, since the graph section can be very long, clicking on any graph will hide the entire section. </li>
                                 </ul>
@@ -94,11 +94,34 @@ window.onload = function() {
             <input id="B2" onclick="FormReset();" type="button" value="Reset Selections"/>
             <input id="B3" type="submit" value="Show Graphs (n)"/>
 
+            <span tal:condition="Options['tf']['value']=='Y'">
+                <input type="radio" name="tf" value="Y" checked/>Filtered
+                <input type="radio" name="tf" value="N"/>All
+            </span>
+
+            <span tal:condition="Options['tf']['value']!='Y'">
+                <input type="radio" name="tf" value="Y"/>Filtered
+                <input type="radio" name="tf" value="N" checked/>All
+            </span>
+
+            <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                'By default, only resources and graphs having data within the selected time range are shown. Select All and Reset selections/Show graphs to disable filtering and show all resources and graphs.'
+                );"/>
+
             <div id="SelectionSection">    
                 <div id="OrderByPlugin">    
                     <img src="${request.static_url('munincollector:static/plus.svg')}" id='AllPlugins-plus' onclick="ToggleDisplay('AllPlugins');" />
                     <img src="${request.static_url('munincollector:static/minus.svg')}" id='AllPlugins-minus' onclick="ToggleDisplay('AllPlugins');" hidden />
-                    All Plugins
+
+                    <span tal:condition="Options['tf']['value']=='Y'">
+                        Filtered
+                    </span>
+
+                    <span tal:condition="Options['tf']['value']!='Y'">
+                        All
+                    </span>
+
+                    Plugins
                     (${len(PT.keys())})
 
                     <div style="display:none" id="AllPlugins">
@@ -199,7 +222,16 @@ window.onload = function() {
                 <div style="display:none" id="OrderByDomain">    
                     <img src="${request.static_url('munincollector:static/plus.svg')}" id='AllDomains-plus' onclick="ToggleDisplay('AllDomains');" />
                     <img src="${request.static_url('munincollector:static/minus.svg')}" id='AllDomains-minus' onclick="ToggleDisplay('AllDomains');" hidden />
-                    All Domains
+
+                    <span tal:condition="Options['tf']['value']=='Y'">
+                        Filtered
+                    </span>
+
+                    <span tal:condition="Options['tf']['value']!='Y'">
+                        All
+                    </span>
+
+                    Domains
                     (${len(DT.keys())})
 
                     <div style="display:none" id="AllDomains">

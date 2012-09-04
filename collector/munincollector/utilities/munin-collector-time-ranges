@@ -1,17 +1,21 @@
+#!/usr/bin/env /opt/PyramidContainers/VirtualEnvironment-Python-2.6/bin/python
+# Use this utility to to create the time ranges pickle used to prune resource selection.
+# Run from cron, say once per hour.
+
 from pyramid.config import Configurator
 from munincollector.resources import Root
 from subprocess import PIPE, Popen, STDOUT
-from stat import *
 import ConfigParser
 import MCutils
 import os
 import glob
+import time
 import cPickle
+#import re
 
-def main(global_config, **settings):
-    """ This function returns a Pyramid WSGI application.
-    """
+os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
+def main():
     # Read and process our configuration file.
     ConfigurationFile = '/usr/local/etc/munin-collector.conf'
     if not os.path.exists(ConfigurationFile):
@@ -170,21 +174,18 @@ def main(global_config, **settings):
         'Options': Options,
         }
 
-    MCutils.Logger(MCconfig, 3, '__init__', 'Started.')
-    MCutils.Logger(MCconfig, 3, '__init__', 'Configuration:')
-    MCutils.Logger(MCconfig, 3, '__init__', '   AllowedDomains : ' + str(MCconfig['AllowedDomains']))
-    MCutils.Logger(MCconfig, 3, '__init__', '   DataDir        : ' + MCconfig['DataDir'])
-    MCutils.Logger(MCconfig, 3, '__init__', '   HostAllowed    : ' + str(MCconfig['HostAllowed']))
-    MCutils.Logger(MCconfig, 3, '__init__', '   ImageDir       : ' + MCconfig['ImageDir'])
-    MCutils.Logger(MCconfig, 3, '__init__', '   LockDir        : ' + MCconfig['LockDir'])
-    MCutils.Logger(MCconfig, 3, '__init__', '   LogLevel       : ' + str(MCconfig['LogLevel']))
-    MCutils.Logger(MCconfig, 3, '__init__', '   Options        : ' + str(MCconfig['Options']))
-    MCutils.Logger(MCconfig, 3, '__init__', '   PluginDir      : ' + MCconfig['PluginDir'])
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Starting munin-collector-time-ranges.')
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Configuration:')
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   AllowedDomains : ' + str(MCconfig['AllowedDomains']))
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   DataDir        : ' + MCconfig['DataDir'])
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   HostAllowed    : ' + str(MCconfig['HostAllowed']))
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   ImageDir       : ' + MCconfig['ImageDir'])
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   LockDir        : ' + MCconfig['LockDir'])
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   LogLevel       : ' + str(MCconfig['LogLevel']))
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   Options        : ' + str(MCconfig['Options']))
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   PluginDir      : ' + MCconfig['PluginDir'])
 
     # Initialize plugin configuration cache.
-    time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
-    time_ranges_updated = int(os.fstat(time_ranges.fileno())[ST_CTIME])
-
     PluginConfigs = {
         'config': {},
         'datasource': {},
@@ -197,24 +198,35 @@ def main(global_config, **settings):
         'HostXref': [],
         'PluginXref': [],
         'MgidXref': [],
-        'TimeRanges': cPickle.load(time_ranges),
-        'TimeRangesUpdated': time_ranges_updated,
+        'TimeRanges': {},
         'Timestamp': 0,
         'Timestamps': { 's1': [], 's2': [] },
         }
 
-    time_ranges.close()
-
     MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
 
-    config = Configurator(root_factory=Root, settings=settings)
-    config.add_settings({'MCconfig': MCconfig})
-    config.add_settings({'PluginConfigs': PluginConfigs})
-    config.add_view('munincollector.views.alive.Check', name='alive')
-    config.add_view('munincollector.views.config.ReadConfig', name='config')
-    config.add_view('munincollector.views.debug.ShowValues', name='debug')
-    config.add_view('munincollector.views.show.DisplayMetrics')
-    config.add_view('munincollector.views.value.ReadValue', name='value')
-    config.add_static_view('static', 'munincollector:static')
-    return config.make_wsgi_app()
+    MCutils.Logger(MCconfig, 4, 'TimeRanges', 'Retrieving  round-robin database time ranges.')
+    for domain in PluginConfigs['DomainTree'].keys():
+        for host in PluginConfigs['DomainTree'][domain].keys():
+            for plugin in PluginConfigs['DomainTree'][domain][host].keys():
+                for mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
 
+                    rrds = glob.glob(MCconfig['DataDir'] + '/' + host + '-' + mgid + '-*')
+                    for rrd in rrds:
+                        p = Popen(['rrdtool', 'first', rrd], stdout=PIPE, stderr=PIPE)
+                        first, stderr = p.communicate()
+                        if stderr == '':
+                            p = Popen(['rrdtool', 'last', rrd], stdout=PIPE, stderr=PIPE)
+                            last, stderr = p.communicate()
+                            if stderr == '':
+                                PluginConfigs['TimeRanges'][host + '-' + mgid] = [ MCutils.StrToInt(first), MCutils.StrToInt(last) ]
+
+    cPickle.dump(PluginConfigs['TimeRanges'], open(MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), 'wb'))
+    p = Popen(['mv', MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), MCconfig['PluginDir'] + '/pickles/TimeRanges'], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = p.communicate()
+    if stderr != '':
+        MCutils.Logger(MCconfig, 2, 'TimeRanges', 'Error creating pickle: ' + stdout)
+
+    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Completed, munin-collector-time-ranges.')
+
+main()
