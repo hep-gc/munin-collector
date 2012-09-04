@@ -11,7 +11,7 @@
         $ConfigurationFile = $ENV{'MUNIN_COLLECTOR_CONF'};
         }
     else {
-        $ConfigurationFile = '/etc/munin/munin-collector.conf';
+        $ConfigurationFile = '/usr/local/etc/munin-collector.conf';
         }
 
     if (! -e $ConfigurationFile) {
