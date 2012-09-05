@@ -18,6 +18,12 @@ echo 'held.label Held Jobs'
 exit 0
 fi
 
-#export CONDOR_CONFIG=/opt/condor-7.5.4/etc/condor_config
+#                                                    1   2   3     4      5        6 7   8    9   10    11  12  13    14   
+# $CondorVersion: 7.8.0 May 08 2012, sample output: 76 jobs; 0 completed, 0 removed, 0 idle, 76 running, 0 held, 0 suspended
+col_all=1
+col_completed=5
+col_queued=7
+col_running=9
+col_held=11
 
-condor_q | /bin/awk '/running/ {print "running.value " $5 "\nqueued.value " $3 "\nheld.value " $7 "\nall.value " $1}'
+condor_q | /bin/awk '/running/ {print "running.value " $'$col_running' "\nqueued.value " $'$col_queued' "\nheld.value " $'$col_held' "\nall.value " $'$col_all'}'
