@@ -1,11 +1,13 @@
 from pyramid.response import Response
 from pyramid.renderers import render_to_response
 from subprocess import PIPE, Popen, STDOUT
+from stat import *
 import os
 import re
 import time
 import lockfile
 import MCutils
+import cPickle
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
@@ -18,6 +20,9 @@ Palette = (
     )
 
 def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
+    # Verify that the plugin configuration cache is up to date.
+    MCutils.CachePluginCheck(MC, PC)
+
     if (plugin in Plugins or
         str(PC['PluginXref'].index(plugin)) + '.' + 
         str(PC['MgidXref'].index(mgid)) + '.' +
@@ -343,8 +348,11 @@ class DisplayMetrics(object):
             # Graph title
             'gt': {'type': 'str', 'disabled': 'disabled', 'value': ''},
 
-            # Graph title
+            # Graph format
             'if': {'type': 'str', 'disabled': 'if', 'value': 'PNG'},
+
+            # Filter resources and graphs by selected time range.
+            'tf': {'type': 'str', 'disabled': 'tf', 'value': 'Y'},
 
             # Display graphs for a comma separated list of plugins.
             'p': {'type': 'str', 'disabled': 'disabled', 'value': ''},
@@ -405,30 +413,101 @@ class DisplayMetrics(object):
 
         # Scan selections array to generate selected graphs.
         Selections = []
-        if CheckedBoxes[0] == 'p':
-            for plugin in sorted(PluginConfigs['PluginTree'].keys()):
-                for mgid in sorted(PluginConfigs['PluginTree'][plugin].keys()):
-                    for domain in sorted(PluginConfigs['PluginTree'][plugin][mgid].keys()):
-                        for host in sorted(PluginConfigs['PluginTree'][plugin][mgid][domain]):
-                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+        if Options['tf']['value'] == 'Y':
+            # Ensure time ranges are up to date.
+            time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
+            time_ranges_updated = int(os.fstat(time_ranges.fileno())[ST_CTIME])
 
-        else:
+            if time_ranges_updated > PluginConfigs['TimeRangesUpdated']:
+                PluginConfigs['TimeRanges'] = cPickle.load(time_ranges)
+                PluginConfigs['TimeRangesUpdated'] = time_ranges_updated
+
+            time_ranges.close()
+
+            PrunedDomains = {}
+            PrunedPlugins = {}
+            end_time = int(Options['ta']['value'] + Options['tr']['value'])
             for domain in sorted(PluginConfigs['DomainTree'].keys()):
                 for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
                     for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
                         for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+                            if PluginConfigs['TimeRanges'].has_key(host + '-' + mgid):
+                                if (Options['ta']['value'] >= PluginConfigs['TimeRanges'][host + '-' + mgid][0] and \
+                                    end_time <= PluginConfigs['TimeRanges'][host + '-' + mgid][1]):
 
-        return render_to_response('munincollector:templates/show.pt', {
-            'request': self.request,
-            'DT': PluginConfigs['DomainTree'],
-            'PT': PluginConfigs['PluginTree'],
-            'DX': PluginConfigs['DomainXref'],
-            'HX': PluginConfigs['HostXref'],
-            'PX': PluginConfigs['PluginXref'],
-            'MX': PluginConfigs['MgidXref'],
-            'Selections': Selections,
-            'Options': Options,
-            })
-#            'Hosts': Hosts,
-#            'PluginConfigs': PluginConfigs,
+                                    if not PrunedDomains.has_key(domain):
+                                        PrunedDomains[domain] = {}
+
+                                    if not PrunedDomains[domain].has_key(host):
+                                        PrunedDomains[domain][host] = {}
+
+                                    if not PrunedDomains[domain][host].has_key(plugin):
+                                        PrunedDomains[domain][host][plugin] = []
+
+                                    if not mgid in PrunedDomains[domain][host][plugin]:
+                                        PrunedDomains[domain][host][plugin] += [mgid]
+
+                                    if not PrunedPlugins.has_key(plugin):
+                                        PrunedPlugins[plugin] = {}
+
+                                    if not PrunedPlugins[plugin].has_key(mgid):
+                                        PrunedPlugins[plugin][mgid] = {}
+
+                                    if not PrunedPlugins[plugin][mgid].has_key(domain):
+                                        PrunedPlugins[plugin][mgid][domain] = []
+
+                                    if not host in PrunedPlugins[plugin][mgid][domain]:
+                                        PrunedPlugins[plugin][mgid][domain] += [host]
+
+            if CheckedBoxes[0] == 'p':
+                for plugin in sorted(PrunedPlugins.keys()):
+                    for mgid in sorted(PrunedPlugins[plugin].keys()):
+                        for domain in sorted(PrunedPlugins[plugin][mgid].keys()):
+                            for host in sorted(PrunedPlugins[plugin][mgid][domain]):
+                                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+
+            else:
+                for domain in sorted(PrunedDomains.keys()):
+                    for host in sorted(PrunedDomains[domain].keys()):
+                        for plugin in sorted(PrunedDomains[domain][host].keys()):
+                            for mgid in sorted(PrunedDomains[domain][host][plugin]):
+                                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+
+            return render_to_response('munincollector:templates/show.pt', {
+                'request': self.request,
+                'DT': PrunedDomains,
+                'PT': PrunedPlugins,
+                'DX': PluginConfigs['DomainXref'],
+                'HX': PluginConfigs['HostXref'],
+                'PX': PluginConfigs['PluginXref'],
+                'MX': PluginConfigs['MgidXref'],
+                'Selections': Selections,
+                'Options': Options,
+                })
+
+        else:
+            if CheckedBoxes[0] == 'p':
+                for plugin in sorted(PluginConfigs['PluginTree'].keys()):
+                    for mgid in sorted(PluginConfigs['PluginTree'][plugin].keys()):
+                        for domain in sorted(PluginConfigs['PluginTree'][plugin][mgid].keys()):
+                            for host in sorted(PluginConfigs['PluginTree'][plugin][mgid][domain]):
+                                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+
+            else:
+                for domain in sorted(PluginConfigs['DomainTree'].keys()):
+                    for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
+                        for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
+                            for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
+                                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+
+            return render_to_response('munincollector:templates/show.pt', {
+                'request': self.request,
+                'DT': PluginConfigs['DomainTree'],
+                'PT': PluginConfigs['PluginTree'],
+                'DX': PluginConfigs['DomainXref'],
+                'HX': PluginConfigs['HostXref'],
+                'PX': PluginConfigs['PluginXref'],
+                'MX': PluginConfigs['MgidXref'],
+                'Selections': Selections,
+                'Options': Options,
+                })

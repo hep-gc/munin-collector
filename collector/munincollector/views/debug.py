@@ -16,6 +16,36 @@ class ShowValues(object):
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
 
+        # Format the plugin links: {host: {plugin: hash, ... }, ... }
+        PL = '<br/><br/>PluginConfigs[\'links\']:'
+        for host in PluginConfigs['links']:
+            PL += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  host 
+            for plugin in PluginConfigs['links'][host]:
+                PL += '<br/>' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      plugin + ' = ' + PluginConfigs['links'][host][plugin]
+
+        # Format the mgid config: {hash: {mgid: {key: value, ... }, ... }, ... }
+        PC = '<br/><br/>PluginConfigs[\'config\']:'
+        for hash in PluginConfigs['config']:
+            PC += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  hash 
+            for mgid in PluginConfigs['config'][hash]:
+                PC += '<br/>' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      '&nbsp&nbsp&nbsp&nbsp' + \
+                      mgid
+                for key in PluginConfigs['config'][hash][mgid]:
+                    PC += '<br/>' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          '&nbsp&nbsp&nbsp&nbsp' + \
+                          key + ' = ' + PluginConfigs['config'][hash][mgid][key]
+
         # Format the domain tree: {domain: {host: {plugin: [mgid, ...], ... }, ... }, ... }
         DT = '<br/><br/>PluginConfigs[\'DomainTree\'] ->'
         for domain in PluginConfigs['DomainTree']:
@@ -66,6 +96,11 @@ class ShowValues(object):
                               '&nbsp&nbsp&nbsp&nbsp' + \
                               host
 
+        # Format the domain cross reference: [domain, ...]
+        S1 = '<br/><br/>PluginConfigs[\'Timestamps\'][\'s1\'] = ' + str(sorted(PluginConfigs['Timestamps']['s1']))
+
+        # Format the domain cross reference: [domain, ...]
+        S2 = '<br/><br/>PluginConfigs[\'Timestamps\'][\'s2\'] = ' + str(sorted(PluginConfigs['Timestamps']['s2']))
 
         # Format the domain cross reference: [domain, ...]
         ix = 0
@@ -107,5 +142,17 @@ class ShowValues(object):
                   mgid
             ix += 1
 
-        return Response(DT + PT + DX + HX + PX + MX + '\n')
+        # Format time ranges
+#       TR = '<br/><br/>TimeRanges:' + str(PluginConfigs['TimeRanges'])
+        TR = '<br/><br/>TimeRanges:'
+        for tr in sorted(PluginConfigs['TimeRanges'].keys()):
+            TR += '<br/>' + \
+                  '&nbsp&nbsp&nbsp&nbsp' + \
+                  '%12d' % PluginConfigs['TimeRanges'][tr][0] + \
+                  '&nbsp' + \
+                  '%12d' % PluginConfigs['TimeRanges'][tr][1] + \
+                  '&nbsp' + \
+                  tr
+
+        return Response(PL + PC + DT + PT + S1 + S2 + DX + HX + PX + MX + TR + '\n')
 

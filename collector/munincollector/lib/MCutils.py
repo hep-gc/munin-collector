@@ -1,8 +1,17 @@
 import os
-import cPickle
+import time
+from stat import *
 from subprocess import PIPE, Popen, STDOUT
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
+
+LogLevels = [
+    'NoLogging',
+    'Error',
+    'Warning',
+    'Info',
+    'Debug',
+    ]
 
 MuninValueTypes = {
     'default': '-g',
@@ -13,55 +22,118 @@ MuninValueTypes = {
     'COMPUTE': '-e',
     }
 
-def CachePluginConfig (MCconfig, PluginConfigs, hash):
-    # Cache plugin config and datasource lists (stage 2): 
-    #     PluginConfigs['config'][<hash>][<mgid>][<key>] = <value>
-    hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
-    lines = hash_file.readlines()
-    hash_file.close()
-    for line in lines:
-        line = line.strip()
-        if line == '' or line == '(nil)':
-            continue
+# Check the currency of the plugin configuration cache.
+def CachePluginCheck (MCconfig, PluginConfigs):
 
-        key_value = line.split(' ', 1)
+    cache_file = open(MCconfig['PluginDir'] + '/config/.last_updated', 'r')
+    last_cache_update = os.fstat(cache_file.fileno())[ST_CTIME]
+    cache_file.close()
 
-        if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
-            mgid = key_value[1]
-            continue
+    if PluginConfigs['Timestamp'] < last_cache_update + 1:
+        Logger(MCconfig, 3, 'MCutils', 'CachePluginCheck: Updating cache, PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', last_cache_update=' + str(last_cache_update) + '.')
+        CachePluginConfigs (MCconfig, PluginConfigs)
+        PluginConfigs['Timestamp'] += 1
 
-        if not PluginConfigs['config'].has_key(hash):
-            PluginConfigs['config'][hash] = {}
-            PluginConfigs['resolved'][hash] = False
 
-        if not PluginConfigs['config'][hash].has_key(mgid):
-            PluginConfigs['config'][hash][mgid] = {}
+# Cache plugin configuration.
+def CachePluginConfigs (MCconfig, PluginConfigs):
+    # Update the timestamp for the last cache refresh.
 
-        PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+    Logger(MCconfig, 4, 'MCutils', 'Stage 1: Cache plugin links - PluginConfigs[\'links\'][<host>][<plugin>] = <hash>')
+    hash_offset = len(MCconfig['PluginDir'] + '/config/')
+    p = Popen(['ls', MCconfig['PluginDir'] + '/links'], stdout=PIPE, stderr=PIPE)
+    hosts, stderr = p.communicate()
+    if stderr == '':
+        hosts = hosts.splitlines()
 
-        # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
-        words = key_value[0].split(".")
-        if len(words) == 2:
-            ds = words[0]
-            if not PluginConfigs['datasource'].has_key(hash):
-                PluginConfigs['datasource'][hash] = {}
+        for host in hosts:
+            snapshot_time = int(time.time())
+            p = Popen(['ls', '-l', MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
+            links, stderr = p.communicate()
+            if stderr == '':
+                links = links.splitlines()
 
-            if not PluginConfigs['datasource'][hash].has_key(mgid):
-                PluginConfigs['datasource'][hash][mgid] = []
+                for link in links:
+                    words = link.split()
+                    if len(words) >= 11:
+                        plugin = words[8]
+                        hash = words[10][hash_offset:]
 
-            if not ds in PluginConfigs['datasource'][hash][mgid]:
-                PluginConfigs['datasource'][hash][mgid] += [ds]
+                        if not PluginConfigs['links'].has_key(host):
+                            PluginConfigs['links'][host] = {}
 
-def CachePluginLink (MCconfig, PluginConfigs, host, plugin, hash):
-    # Cache plugin links (stage 1): 
-    #     PluginConfigs['links'][<host>][<plugin>] = <hash>
-    if not PluginConfigs['links'].has_key(host):
-        PluginConfigs['links'][host] = {}
+                        if not PluginConfigs['links'][host].has_key(plugin):
+                            PluginConfigs['links'][host][plugin] = hash
 
-    PluginConfigs['links'][host][plugin] = hash
+                            link_file = open(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin, 'r')
+                            link_timestamp = os.fstat(link_file.fileno())[ST_CTIME]
+                            link_file.close()
 
-def CachePluginXref(MCconfig, PluginConfigs):
-    # Build domain and plugin trees and cross references used for graph selection (stage 3).
+                            PluginConfigs['Timestamps']['s1'] += [ (link_timestamp, host, plugin) ]
+                            PluginConfigs['Timestamp'] = snapshot_time
+
+                            Logger(MCconfig, 4, 'MCutils', 'Link added for host=' + host + ', plugin=' + plugin + ', hash=' + hash + '.')
+
+    Logger(MCconfig, 4, 'MCutils', 'Stage 2: Cache plugin configs - PluginConfigs[\'config\'][<hash>][<mgid>][<key>] = <value>')
+    snapshot_time = int(time.time())
+    p = Popen(['ls', MCconfig['PluginDir'] + '/config'], stdout=PIPE, stderr=PIPE)
+    hashes, stderr = p.communicate()
+    if stderr == '':
+        hashes = hashes.splitlines()
+        for hash in hashes:
+            if not PluginConfigs['config'].has_key(hash):
+                # Wait for the hash to age before processing.
+                while 1:
+                    hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
+                    hash_age = time.time() - os.fstat(hash_file.fileno())[ST_CTIME]
+                    hash_file.close()
+                    if hash_age > 5:
+                        break
+
+                    Logger(MCconfig, 3, 'MCutils', 'Sleeping 5 seconds waiting for hash to age.')
+                    time.sleep(5)
+
+                Logger(MCconfig, 4, 'MCutils', 'Processing hash=' + hash + '.')
+                hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
+                hash_timestamp = os.fstat(hash_file.fileno())[ST_CTIME]
+                lines = hash_file.readlines()
+                hash_file.close()
+                for line in lines:
+                    line = line.strip()
+                    if line == '' or line == '(nil)':
+                        continue
+
+                    key_value = line.split(' ', 1)
+
+                    if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
+                        mgid = key_value[1]
+                        PluginConfigs['Timestamps']['s2'] += [ (hash_timestamp, mgid) ]
+                        PluginConfigs['Timestamp'] = snapshot_time
+                        continue
+
+                    if not PluginConfigs['config'].has_key(hash):
+                        PluginConfigs['config'][hash] = {}
+                        PluginConfigs['resolved'][hash] = False
+
+                    if not PluginConfigs['config'][hash].has_key(mgid):
+                        PluginConfigs['config'][hash][mgid] = {}
+
+                    PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+
+                    # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
+                    words = key_value[0].split(".")
+                    if len(words) == 2:
+                        ds = words[0]
+                        if not PluginConfigs['datasource'].has_key(hash):
+                            PluginConfigs['datasource'][hash] = {}
+
+                        if not PluginConfigs['datasource'][hash].has_key(mgid):
+                            PluginConfigs['datasource'][hash][mgid] = []
+
+                        if not ds in PluginConfigs['datasource'][hash][mgid]:
+                            PluginConfigs['datasource'][hash][mgid] += [ds]
+
+    Logger(MCconfig, 4, 'MCutils', 'Stage 3: Build domain and plugin trees')
     for host in PluginConfigs['links']:
         domain = GetDomain(host)
         for plugin in PluginConfigs['links'][host]:
@@ -90,22 +162,23 @@ def CachePluginXref(MCconfig, PluginConfigs):
                 if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
                     PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
 
-                if not domain in PluginConfigs['DomainXref']:
-                    PluginConfigs['DomainXref'] += [domain]
-                    cPickle.dump(PluginConfigs['DomainXref'], open(MCconfig['PluginDir'] + '/pickles/DomainXref', 'wb') )
+    Logger(MCconfig, 4, 'MCutils', 'Stage 4: Build cross references used for graph selection')
+    for s1 in sorted(PluginConfigs['Timestamps']['s1']):
+        domain =GetDomain(s1[1])
 
-                if not host in PluginConfigs['HostXref']:
-                    PluginConfigs['HostXref'] += [host]
-                    cPickle.dump(PluginConfigs['HostXref'], open(MCconfig['PluginDir'] + '/pickles/HostXref', 'wb') )
+        if not domain in PluginConfigs['DomainXref']:
+            PluginConfigs['DomainXref'] += [ domain ]
 
-                if not plugin in PluginConfigs['PluginXref']:
-                    PluginConfigs['PluginXref'] += [plugin]
-                    cPickle.dump(PluginConfigs['PluginXref'], open(MCconfig['PluginDir'] + '/pickles/PluginXref', 'wb') )
+        if not s1[1] in PluginConfigs['HostXref']:
+            PluginConfigs['HostXref'] += [ s1[1] ]
 
-                if not mgid in PluginConfigs['MgidXref']:
-                    PluginConfigs['MgidXref'] += [mgid]
-                    cPickle.dump(PluginConfigs['MgidXref'], open(MCconfig['PluginDir'] + '/pickles/MgidXref', 'wb') )
+        if not s1[2] in PluginConfigs['PluginXref']:
+            PluginConfigs['PluginXref'] += [ s1[2] ]
 
+    for s2 in sorted(PluginConfigs['Timestamps']['s2']):
+
+        if not s2[1] in PluginConfigs['MgidXref']:
+            PluginConfigs['MgidXref'] += [ s2[1] ]
 
 # Scan AllowedDomains. Return 'True', if the specified host is within an allowed domain. Otherwise return 'False'.
 def CheckAllowedDomains( AllowedDomains, HostAddr ):
@@ -147,6 +220,10 @@ def IpToInt( Ip ):
         host_addr_2 += StrToInt(nibbles_2[ix])
 
     return host_addr_1 + host_addr_2
+
+def Logger( MCconfig, level, module, message ):
+    if level <= MCconfig['LogLevel']:
+        print module + ' (' + str('%05d' % os.getpid()) + ') ' + LogLevels[level] + ': ' + message
 
 def MuninType( PluginConfig, key ):
 # Return Munin rrd file modifier based on supplied plugin configuration parameters.
