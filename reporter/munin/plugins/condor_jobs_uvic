@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# NB: This must be run under account with appropriate grid proxy certificates; see ../etc/plugin-config.d/condor_jobs_uvic
+#
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
 if [ "$1" = "config" ]; then
