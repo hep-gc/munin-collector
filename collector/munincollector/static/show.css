@@ -1,0 +1,7 @@
+ol,ul{list-style:none;}
+input[type=text],input[type=password]{width:300px;}
+.bottom{width:800px;margin-left:25px}
+#col1{width:175px;float:left;padding-right:25px;}
+#col2{width:175px;float:right;padding-left:25px;}
+#left{height:10px;width:125px;float:left;padding-right:25px;}
+#right{height:10px;width:600px;float:right;padding-left:25px;}

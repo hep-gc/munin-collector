@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="${request.static_url('munincollector:static/favicon.ico')}" />
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/nobile/stylesheet.css" media="screen">
     <link rel="stylesheet" href="http://static.pylonsproject.org/fonts/neuton/stylesheet.css" media="screen">
-    <link rel="stylesheet" href="${request.static_url('munincollector:static/mc.css')}" type="text/css" media="screen" charset="utf-8" />
+    <link rel="stylesheet" href="${request.static_url('munincollector:static/show.css')}" type="text/css" media="screen" charset="utf-8" />
     <script type="text/javascript" src="${request.static_url('munincollector:static/show.js')}"></script>
 
     <!--[if lte IE 6]>
