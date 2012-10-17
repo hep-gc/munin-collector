@@ -8,16 +8,20 @@ Both functions are run periodically by cron.
 Installation:
 
 1. Install prerequisites: sudo yum install redis munin-node
+   The installation of munin-node will also configure the munin-plugins to collect
+   a variety of statistics by default. For more information on configuring plugins,
+   see the munin-node documentation. The optional step 5 below, describe how to
+   configure the plugins to collect statistics for cpu, memory, network and
+   filesystem usage only.
 2. Configure redis to start at boot: sudo chkconfig redis on
 3. Start redis: sudo service redis start
 4. Install package: sudo ./INSTALL
-   This will also configure the munin plugins to record just the cpu, memory, network,
-   and filesystem usage. For more information on configuring plugins, see the munin-node
-   documentation.
-5. Configure munin-node-reporter: edit "/usr/local/etc/munin-node-reporter.conf" and set
+5. Optionally, to reconfigure munin plugins to record statistics for just cpu, memory,
+   network, and filesystem usage, run: sudo ./ENABLE_ONLY_CPU_DF_MEMORY_NICS_PLUGINS
+6. Configure munin-node-reporter: edit "/usr/local/etc/munin-node-reporter.conf" and set
    "CollectorURL" tag to point to your collector.
-6. Get cron to run munin-node-redis and munin-node-reporter: sudo service crond restart
-7. Is it running? Wait five minutes and try: redis-cli keys '*' - it should give:
+7. Get cron to run munin-node-redis and munin-node-reporter: sudo service crond restart
+8. Is it running? Wait five minutes and try: redis-cli keys '*' - it should give:
 
    1) "+Plugin:if_eth0"
    2) "+Plugin:cpu"
