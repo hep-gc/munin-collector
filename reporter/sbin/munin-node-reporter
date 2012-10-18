@@ -161,6 +161,8 @@
                         Logger(2, "Command was: curl -X PUT $Config{'CollectorURL'}/value?host=$hostname&plugin=$plugin&mgid=$mgid&key=$key&values=$values");
                         if ($x[0] eq "munin-collector-value: bad key parameter.") {
                             next;
+                        } elsif ($x[0] eq "munin-collector-value: bad mgid parameter.") {
+                            next;
                         } else {
                             Logger(1, "Aborting, having processed $total_plugins plugins in $total_time seconds.");
                             exit;
