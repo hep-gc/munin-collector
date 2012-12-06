@@ -39,7 +39,7 @@
 
 			END{ \
 				for (cloud=1; cloud<=cloudcount; cloud++) { \
-					print "multigraph clouds_" clouds[cloud]; \
+					print "multigraph cloud_" clouds[cloud]; \
 					print "graph_title Cloud Activity on " clouds[cloud]; \
 					print "graph_category Cloud"; \
 					print "graph_vlabel Virtual Machines"; \
