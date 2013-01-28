@@ -1,0 +1,80 @@
+#!/bin/bash
+#	Process the columns of condor_q -l.
+
+	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+
+    if [[ 'x'$MUNIN_JOBSBYUSER_CLOUDS = 'x' || 'x'$MUNIN_JOBSBYUSER_COMPUTE_DOMAINS = 'x' || 'x'$MUNIN_JOBSBYUSER_USERS = 'x' ]]; then
+        echo
+        echo "Missing configuration; /etc/munin/plugin-conf.d/jobsbyuser.conf must specify:"
+        echo "   env.MUNIN_JOBSBYUSER_CLOUDS cloud_1 cloud_2 ... cloud_N"
+        echo "   env.MUNIN_JOBSBYUSER_COMPUTE_DOMAINS domain_1 domain_2 ... domain_N"
+        echo "   env.MUNIN_JOBSBYUSER_USERS user_1 user_2 ... user_N"
+        echo 
+        echo "NB: For every cloud there should be a matching Compute Domain."
+        exit 1
+    fi
+
+	if [ "$1" = "config" ]; then
+		echo '' | awk -v cloudlist="$MUNIN_JOBSBYUSER_CLOUDS"  -v userlist="$MUNIN_JOBSBYUSER_USERS" \
+			'BEGIN{ \
+				cloudcount = split(cloudlist, clouds); \
+				usercount = split(userlist, users); \
+				} \
+
+			{ \
+				if ($1=="") next; \
+				} \
+
+			END{ \
+				for (user=1; user<=usercount; user++) { \
+					print "multigraph jobs_by_" users[user]; \
+					print "graph_title HTCondor Jobs by User: " users[user]; \
+					print "graph_category Cloud"; \
+					print "graph_vlabel Jobs"; \
+					print "graph_width 600"; \
+					print "graph_height 300\n"; \
+
+					print clouds[1]".label " clouds[1]; \
+					print clouds[1]".draw AREA"; \
+					print clouds[1]".max 10000"; \
+					print clouds[1]".min 0\n"; \
+
+                    for (cloud=2; cloud<=cloudcount; cloud++) { \
+                        print clouds[cloud]".label " clouds[cloud]; \
+                        print clouds[cloud]".draw STACK"; \
+                        print clouds[cloud]".max 10000"; \
+                        print clouds[cloud]".min 0\n"; \
+                        } \
+					} \
+				}'
+	else
+		condor_q -l | awk -v cloudlist="$MUNIN_JOBSBYUSER_CLOUDS"  -v domainlist="$MUNIN_JOBSBYUSER_COMPUTE_DOMAINS" -v userlist="$MUNIN_JOBSBYUSER_USERS" \
+			'BEGIN{ \
+				cloudcount = split(cloudlist, clouds); \
+				domaincount = split(domainlist, domains); \
+				usercount = split(userlist, users); \
+				for (domain=1; domain<=domaincount; domain++) { \
+                    domain2cloud[domains[domain]]=clouds[domain]; \
+                    } \
+				} \
+
+			/^Owner/ { \
+                user=substr($3, 2, length($3)-2); \
+				} \
+
+			/^RemoteHost/ { \
+                ix=index($3, ".")+1; \
+                if (ix<2) next; \
+                domain=substr($3, ix, length($3)-ix); \
+                counts[user,domain2cloud[domain]]=counts[user,domain2cloud[domain]]+1; \
+				} \
+
+			END{ \
+				for (user=1; user<=usercount; user++) { \
+					print "multigraph jobs_by_" users[user]; \
+                    for (cloud=1; cloud<=cloudcount; cloud++) { \
+                        print clouds[cloud]".value " counts[users[user], clouds[cloud]]+0; \
+                        } \
+					} \
+				}'
+	fi

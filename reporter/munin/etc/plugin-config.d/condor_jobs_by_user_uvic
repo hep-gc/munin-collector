@@ -1,0 +1,6 @@
+[jobsbyuser]
+user munin
+env.MUNIN_JOBSBYUSER_CLOUDS Elephant FGFoxtrot FGHotel FGSierra Hermes nova NRC Quicksilver
+env.MUNIN_JOBSBYUSER_COMPUTE_DOMAINS heprc.uvic.ca ufl.futuregrid.org vmp.uc.futuregrid.org sdsc.futuregrid.org westgrid.uvic.ca rc.melbourne.nectar.org.au cloud.nrc.ca rcfcloud.uvic.ca
+env.MUNIN_JOBSBYUSER_USERS apf apf-test crlb rsobie
+
