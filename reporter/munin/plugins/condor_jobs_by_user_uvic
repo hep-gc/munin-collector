@@ -2,12 +2,12 @@
 #	Process the columns of condor_q -l.
 
 	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+    save_IFS=$IFS
 
-    if [[ 'x'$MUNIN_JOBSBYUSER_CLOUDS = 'x' || 'x'$MUNIN_JOBSBYUSER_COMPUTE_DOMAINS = 'x' || 'x'$MUNIN_JOBSBYUSER_USERS = 'x' ]]; then
+    if [[ 'x'$MUNIN_JOBSBYUSER_CLOUDS = 'x' || 'x'$MUNIN_JOBSBYUSER_USERS = 'x' ]]; then
         echo
         echo "Missing configuration; /etc/munin/plugin-conf.d/jobsbyuser.conf must specify:"
         echo "   env.MUNIN_JOBSBYUSER_CLOUDS cloud_1 cloud_2 ... cloud_N"
-        echo "   env.MUNIN_JOBSBYUSER_COMPUTE_DOMAINS domain_1 domain_2 ... domain_N"
         echo "   env.MUNIN_JOBSBYUSER_USERS user_1 user_2 ... user_N"
         echo 
         echo "NB: For every cloud there should be a matching Compute Domain."
@@ -15,40 +15,41 @@
     fi
 
 	if [ "$1" = "config" ]; then
-		echo '' | awk -v cloudlist="$MUNIN_JOBSBYUSER_CLOUDS"  -v userlist="$MUNIN_JOBSBYUSER_USERS" \
-			'BEGIN{ \
-				cloudcount = split(cloudlist, clouds); \
-				usercount = split(userlist, users); \
-				} \
+        for user in $MUNIN_JOBSBYUSER_USERS; do
+            echo "multigraph jobs_by_"$user
+            echo "graph_args --lower-limit 0"
+            echo "graph_title HTCondor Jobs by User:" $user
+            echo "graph_category Cloud"
+            echo "graph_vlabel Jobs"
+            echo "graph_width 600"
+            echo "graph_height 300"
+            echo 
 
-			{ \
-				if ($1=="") next; \
-				} \
+            areastack='AREA'
+            for cloud_parms in $MUNIN_JOBSBYUSER_CLOUDS; do
+                IFS=":"
+                cloud=($cloud_parms)
+                IFS=$save_IFS
 
-			END{ \
-				for (user=1; user<=usercount; user++) { \
-					print "multigraph jobs_by_" users[user]; \
-					print "graph_title HTCondor Jobs by User: " users[user]; \
-					print "graph_category Cloud"; \
-					print "graph_vlabel Jobs"; \
-					print "graph_width 600"; \
-					print "graph_height 300\n"; \
-
-					print clouds[1]".label " clouds[1]; \
-					print clouds[1]".draw AREA"; \
-					print clouds[1]".max 10000"; \
-					print clouds[1]".min 0\n"; \
-
-                    for (cloud=2; cloud<=cloudcount; cloud++) { \
-                        print clouds[cloud]".label " clouds[cloud]; \
-                        print clouds[cloud]".draw STACK"; \
-                        print clouds[cloud]".max 10000"; \
-                        print clouds[cloud]".min 0\n"; \
-                        } \
-					} \
-				}'
+                echo ${cloud[0]}".label" ${cloud[0]}
+                echo ${cloud[0]}".draw" $areastack
+                echo ${cloud[0]}".max 10000"
+                echo ${cloud[0]}".min 0"
+                echo 
+                areastack='STACK'
+            done
+        done
 	else
-		condor_q -l | awk -v cloudlist="$MUNIN_JOBSBYUSER_CLOUDS"  -v domainlist="$MUNIN_JOBSBYUSER_COMPUTE_DOMAINS" -v userlist="$MUNIN_JOBSBYUSER_USERS" \
+        for cloud_parms in $MUNIN_JOBSBYUSER_CLOUDS; do
+            IFS=":"
+            cloud=($cloud_parms)
+            IFS=$save_IFS
+
+            cloudlist=$cloudlist" "${cloud[0]}
+            domainlist=$domainlist" "${cloud[1]}
+        done
+
+		condor_q -running | awk -v cloudlist="$cloudlist"  -v domainlist="$domainlist" -v userlist="$MUNIN_JOBSBYUSER_USERS" \
 			'BEGIN{ \
 				cloudcount = split(cloudlist, clouds); \
 				domaincount = split(domainlist, domains); \
@@ -58,16 +59,15 @@
                     } \
 				} \
 
-			/^Owner/ { \
-                user=substr($3, 2, length($3)-2); \
-				} \
+            // { \
+                user=$2; \
 
-			/^RemoteHost/ { \
-                ix=index($3, ".")+1; \
+                ix=index($6, ".")+1; \
                 if (ix<2) next; \
-                domain=substr($3, ix, length($3)-ix); \
+                domain=substr($6, ix, length($6)+1-ix); \
+
                 counts[user,domain2cloud[domain]]=counts[user,domain2cloud[domain]]+1; \
-				} \
+                } \
 
 			END{ \
 				for (user=1; user<=usercount; user++) { \
