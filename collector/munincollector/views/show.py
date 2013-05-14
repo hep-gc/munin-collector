@@ -63,6 +63,8 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
             for ds in data_sources:
                 Columns += [ds]
                 ds_path = data_path + '-' + ds + MCutils.MuninType(PC['config'][PC['links'][host][plugin]][mgid], ds) + '.rrd'
+                MCutils.Logger(MC, 4, 'show', 'CSV data source path = ' + ds_path)
+                MCutils.Logger(MC, 4, 'show', 'CSV data source config hash = ' + PC['links'][host][plugin])
                 if os.path.exists(ds_path):
                     if PC['config'][PC['links'][host][plugin]][mgid].has_key(ds + '.draw'):
                         csv_command = [
@@ -76,10 +78,12 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
                             str(Options['ta']['value'] + int(Options['tr']['value'] * 3600)),
                             ]
 
+                        MCutils.Logger(MC, 4, 'show', 'CSV data source fetch = ' + str(csv_command))
                         p = Popen(csv_command, stdout=PIPE, stderr=PIPE)
                         items, stderr = p.communicate()
                         if stderr == '':
                             items = items.splitlines()
+                            MCutils.Logger(MC, 4, 'show', 'CSV data source items = ' + str(len(items)))
 
                             for item in items:
                                 values = item.split()
@@ -283,6 +287,8 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
                 graph_command += [
                     '--lazy',
                     ]
+
+            MCutils.Logger(MC, 4, 'show', 'Graph generation command = ' + str(graph_command))
 
             p = Popen(graph_command, stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
