@@ -8,6 +8,18 @@ import time
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
+def check_params(params, param_id, option):
+    if not params.has_key(param_id):
+        return 0
+
+    if len(str(params[param_id])) < 1:
+        return 0
+
+    if (option and re.search(r'[^\_\-\.a-zA-Z0-9]', str(params[param_id]))):
+        return 0
+
+    return 1
+
 class ReadConfig(object):
     def __init__(self, request):
         self.request = request
@@ -23,12 +35,12 @@ class ReadConfig(object):
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
 
-        if (Params.has_key('host') and
-            Params.has_key('plugin') and
-            Params.has_key('hash') and
-            Params.has_key('mgid') and
-            Params.has_key('sequence') and
-            Params.has_key('data')):
+        if (check_params(Params, 'host', 1) and 
+            check_params(Params, 'plugin', 1) and 
+            check_params(Params, 'hash', 1) and 
+            check_params(Params, 'mgid', 1) and 
+            check_params(Params, 'sequence', 1) and 
+            check_params(Params, 'data', 0)):
 
             host = str(Params['host'])
             plugin = str(Params['plugin'])
@@ -100,24 +112,24 @@ class ReadConfig(object):
                 return Response('munin-collector-config: unable to create host directory.\n')
         else:
             missing = []
-            if not Params.has_key('host'):
+            if not check_params(Params, 'host', 1):
                 missing += ['host']
 
-            if not Params.has_key('plugin'):
+            if not check_params(Params, 'plugin', 1):
                 missing += ['plugin']
 
-            if not Params.has_key('hash'):
+            if not check_params(Params, 'hash', 1):
                 missing += ['hash']
 
-            if not Params.has_key('mgid'):
+            if not check_params(Params, 'mgid', 1):
                 missing += ['mgid']
 
-            if not Params.has_key('sequence'):
+            if not check_params(Params, 'sequence', 1):
                 missing += ['sequence']
 
-            if not Params.has_key('data'):
+            if not check_params(Params, 'data', 0):
                 missing += ['data']
 
-            MCutils.Logger(MCconfig, 2, 'config', 'Returning fields missing, host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', hash=' + hash + ', sequence=' + str(sequence) + ', data=' + data)
-            return Response('munin-collector-config: the following required fields are missing: ' + str(missing) +     '\n')
+            MCutils.Logger(MCconfig, 2, 'config', 'The following required fields are missing or invalid: ' + str(missing))
+            return Response('munin-collector-config: the following required fields are missing or invalid: ' + str(missing) +     '\n')
 
