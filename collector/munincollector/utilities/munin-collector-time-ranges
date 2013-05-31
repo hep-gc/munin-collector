@@ -219,7 +219,16 @@ def main():
                             p = Popen(['rrdtool', 'last', rrd], stdout=PIPE, stderr=PIPE)
                             last, stderr = p.communicate()
                             if stderr == '':
-                                PluginConfigs['TimeRanges'][host + '-' + mgid] = [ MCutils.StrToInt(first), MCutils.StrToInt(last) ]
+                                first_int = MCutils.StrToInt(first)
+                                last_int = MCutils.StrToInt(last)
+                                if PluginConfigs['TimeRanges'].has_key(host + '-' + mgid):
+                                    if first_int < PluginConfigs['TimeRanges'][host + '-' + mgid][0]:
+                                        PluginConfigs['TimeRanges'][host + '-' + mgid][0] = first_int
+
+                                    if last_int > PluginConfigs['TimeRanges'][host + '-' + mgid][1]:
+                                        PluginConfigs['TimeRanges'][host + '-' + mgid][1] = last_int
+                                else:
+                                    PluginConfigs['TimeRanges'][host + '-' + mgid] = [ first_int, last_int ]
 
     cPickle.dump(PluginConfigs['TimeRanges'], open(MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), 'wb'))
     p = Popen(['mv', MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), MCconfig['PluginDir'] + '/pickles/TimeRanges'], stdout=PIPE, stderr=PIPE)
