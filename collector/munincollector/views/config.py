@@ -12,7 +12,7 @@ def check_params(params, param_id, option):
     if not params.has_key(param_id):
         return 0
 
-    if len(str(params[param_id])) < 1:
+    if (option and len(str(params[param_id])) < 1):
         return 0
 
     if (option and re.search(r'[^\_\-\.a-zA-Z0-9]', str(params[param_id]))):
