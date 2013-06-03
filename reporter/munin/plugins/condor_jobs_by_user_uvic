@@ -1,80 +1,64 @@
-#!/bin/bash
-#	Process the columns of condor_q -l.
+#!/usr/bin/perl
+#	Report jobs by user.
+    $option = shift();
 
-	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
-    save_IFS=$IFS
+    @users = split(/[\s\n]+/, $ENV{'MUNIN_JOBSBYUSER_USERS'});
 
-    if [[ 'x'$MUNIN_JOBSBYUSER_CLOUDS = 'x' || 'x'$MUNIN_JOBSBYUSER_USERS = 'x' ]]; then
-        echo
-        echo "Missing configuration; /etc/munin/plugin-conf.d/jobsbyuser.conf must specify:"
-        echo "   env.MUNIN_JOBSBYUSER_CLOUDS cloud_1 cloud_2 ... cloud_N"
-        echo "   env.MUNIN_JOBSBYUSER_USERS user_1 user_2 ... user_N"
-        echo 
-        echo "NB: For every cloud there should be a matching Compute Domain."
-        exit 1
-    fi
+    @clouds = `cloud_status | awk 'NF>0 && !/^Resource/ && !/^NAME/ {print \$1}' | sort`;
+    foreach $cloud (@clouds) {
+        chop($cloud);
+    }
 
-	if [ "$1" = "config" ]; then
-        for user in $MUNIN_JOBSBYUSER_USERS; do
-            echo "multigraph jobs_by_"$user
-            echo "graph_args --lower-limit 0"
-            echo "graph_title HTCondor Jobs by User:" $user
-            echo "graph_category Cloud"
-            echo "graph_vlabel Jobs"
-            echo "graph_width 600"
-            echo "graph_height 300"
-            echo 
+    if ($option eq 'config') {
+        foreach $user (@users) {
+            print "multigraph jobs_by_$user\n";
+            print "graph_args --lower-limit 0\n";
+            print "graph_title HTCondor Jobs by User: $user\n";
+            print "graph_category Cloud\n";
+            print "graph_vlabel Jobs\n";
+            print "graph_width 600\n";
+            print "graph_height 300\n\n";
 
-            areastack='AREA'
-            for cloud_parms in $MUNIN_JOBSBYUSER_CLOUDS; do
-                IFS=":"
-                cloud=($cloud_parms)
-                IFS=$save_IFS
+            $areastack='AREA';
+            foreach $cloud (@clouds) {
+                print "$cloud.label $cloud\n";
+                print "$cloud.draw $areastack\n";
+                print "$cloud.max 10000\n";
+                print "$cloud.min 0\n\n";
+                $areastack='STACK';
+            }
+        }
+    } else {
+        foreach $user (sort(@users)) {
+            foreach $cloud (sort(@clouds)) {
+                $count{$user}{$cloud} = 0;
+            }
+        }
 
-                echo ${cloud[0]}".label" ${cloud[0]}
-                echo ${cloud[0]}".draw" $areastack
-                echo ${cloud[0]}".max 10000"
-                echo ${cloud[0]}".min 0"
-                echo 
-                areastack='STACK'
-            done
-        done
-	else
-        for cloud_parms in $MUNIN_JOBSBYUSER_CLOUDS; do
-            IFS=":"
-            cloud=($cloud_parms)
-            IFS=$save_IFS
+        @vms=`cloud_status -m | awk 'NF>5 && !/^ID/ && !/^Total/ {print \$6 " " \$2}'`;
+        foreach $vm (@vms) {
+            @x = split(/[\s\n]+/, $vm);
+            $cloud{$x[1]}=$x[0];
+        }
 
-            cloudlist=$cloudlist" "${cloud[0]}
-            domainlist=$domainlist" "${cloud[1]}
-        done
+        @jobs=`condor_q -running  | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
+        foreach $job (@jobs) {
+            @x = split(/[\s\@\n]+/, $job);
+            if ($cloud{$x[2]} eq '') {
+                for $cloud (keys(%cloud)) {
+                    #print "$x[0] $cloud{$cloud}\n" if $x[2] =~/^$cloud/;
+                    $count{$x[0]}{$cloud{$cloud}} += 1 if $x[2] =~/^$cloud/;
+                }
+            } else {
+                #print ">$x[0]< >$cloud{$x[2]}<\n";
+                $count{$x[0]}{$cloud{$x[2]}} += 1;
+            }
+        }
 
-		condor_q -running | awk -v cloudlist="$cloudlist"  -v domainlist="$domainlist" -v userlist="$MUNIN_JOBSBYUSER_USERS" \
-			'BEGIN{ \
-				cloudcount = split(cloudlist, clouds); \
-				domaincount = split(domainlist, domains); \
-				usercount = split(userlist, users); \
-				for (domain=1; domain<=domaincount; domain++) { \
-                    domain2cloud[domains[domain]]=clouds[domain]; \
-                    } \
-				} \
-
-            // { \
-                user=$2; \
-
-                ix=index($6, ".")+1; \
-                if (ix<2) next; \
-                domain=substr($6, ix, length($6)+1-ix); \
-
-                counts[user,domain2cloud[domain]]=counts[user,domain2cloud[domain]]+1; \
-                } \
-
-			END{ \
-				for (user=1; user<=usercount; user++) { \
-					print "multigraph jobs_by_" users[user]; \
-                    for (cloud=1; cloud<=cloudcount; cloud++) { \
-                        print clouds[cloud]".value " counts[users[user], clouds[cloud]]+0; \
-                        } \
-					} \
-				}'
-	fi
+        foreach $user (sort(@users)) {
+            print "multigraph jobs_by_$user\n";
+            foreach $cloud (sort(@clouds)) {
+                print "$cloud.value $count{$user}{$cloud}\n";
+            }
+        }
+    }

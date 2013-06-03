@@ -52,45 +52,21 @@
 					print "error.max 10000"; \
 					print "error.min 0\n"; \
 
-					print "httpfail.label HTTPfail"; \
-					print "httpfail.draw STACK"; \
-					print "httpfail.colour e9c6af"; \
-					print "httpfail.max 10000"; \
-					print "httpfail.min 0\n"; \
-
-					print "brokenpipes.label BrokwnPipes"; \
-					print "brokenpipes.draw STACK"; \
-					print "brokenpipes.colour deaa87"; \
-					print "brokenpipes.max 10000"; \
-					print "brokenpipes.min 0\n"; \
-
-					print "destroyed.label Destroyed"; \
-					print "destroyed.draw STACK"; \
-					print "destroyed.colour d38d5f"; \
-					print "destroyed.max 10000"; \
-					print "destroyed.min 0\n"; \
+					print "noimage.label NoImage"; \
+					print "noimage.draw STACK"; \
+					print "noimage.colour 602000"; \
+					print "noimage.max 10000"; \
+					print "noimage.min 0\n"; \
 
 					print "noproxy.label NoProxy"; \
 					print "noproxy.draw STACK"; \
-					print "noproxy.colour c87137"; \
+					print "noproxy.colour 605000"; \
 					print "noproxy.max 10000"; \
 					print "noproxy.min 0\n"; \
 
-					print "expiredproxy.label ExpiredProxy"; \
-					print "expiredproxy.draw STACK"; \
-					print "expiredproxy.colour a05a2c"; \
-					print "expiredproxy.max 10000"; \
-					print "expiredproxy.min 0\n"; \
-
-					print "connectionrefused.label ConnectionRefused"; \
-					print "connectionrefused.draw STACK"; \
-					print "connectionrefused.colour 784421"; \
-					print "connectionrefused.max 10000"; \
-					print "connectionrefused.min 0\n"; \
-
 					print "unpropagated.label Unpropagated"; \
 					print "unpropagated.draw STACK"; \
-					print "unpropagated.colour cccccc"; \
+					print "unpropagated.colour 406040"; \
 					print "unpropagated.max 10000"; \
 					print "unpropagated.min 0\n"; \
 
@@ -106,7 +82,13 @@
 					print "running.max 10000"; \
 					print "running.min 0\n"; \
 
-					print "heartbeat.label Cloud Scheduler Heartbeat"; \
+					print "retiring.label Retiring"; \
+					print "retiring.draw STACK"; \
+					print "retiring.colour 008888"; \
+					print "retiring.max 10000"; \
+					print "retiring.min 0\n"; \
+
+					print "heartbeat.label Heartbeat"; \
 					print "heartbeat.draw LINE3"; \
 					print "heartbeat.colour ff0000\n"; \
 					} \
@@ -131,15 +113,16 @@
 			// { \
 				if ($0=="" || $1=="ID" || $1=="Total") next; \
 				state="error"; \
-				if ($'$StatusCol'=="HTTPFail") state="httpfail"; \
-				if ($'$StatusCol'=="BrokenPipes") state="brokenpipes"; \
-				if ($'$StatusCol'=="Destroyed") state="destroyed"; \
+				if ($'$StatusCol'=="BrokenPipes") state="error"; \
+				if ($'$StatusCol'=="ConnectionRefused") state="error"; \
+				if ($'$StatusCol'=="Destroyed") state="error"; \
+				if ($'$StatusCol'=="HTTPFail") state="noimage"; \
 				if ($'$StatusCol'=="NoProxy") state="noproxy"; \
-				if ($'$StatusCol'=="ExpiredProxy") state="expiredproxy"; \
-				if ($'$StatusCol'=="ConnectionRefused") state="connectionrefused"; \
+				if ($'$StatusCol'=="ExpiredProxy") state="noproxy"; \
 				if ($'$StatusCol'=="Unpropagated") state="unpropagated"; \
 				if ($'$StatusCol'=="Starting") state="starting"; \
 				if ($'$StatusCol'=="Running") state="running"; \
+				if ($'$StatusCol'=="Retiring") state="retiring"; \
 				count[$'$ClusterCol',state]++ \
 				} \
 
@@ -147,8 +130,12 @@
 				for (cloud=1; cloud<=cloudcount; cloud++) { \
 					print "multigraph cloud_" clouds[cloud]; \
 					print "error.value " count[clouds[cloud],"error"]+0; \
-					print "running.value " count[clouds[cloud],"running"]+0; \
+					print "noimage.value " count[clouds[cloud],"noimage"]+0; \
+					print "noproxy.value " count[clouds[cloud],"noproxy"]+0; \
+					print "unpropagated.value " count[clouds[cloud],"unpropagated"]+0; \
 					print "starting.value " count[clouds[cloud],"starting"]+0; \
+					print "running.value " count[clouds[cloud],"running"]+0; \
+					print "retiring.value " count[clouds[cloud],"retiring"]+0; \
 
 					if (switch=="Yes") print "heartbeat.value 0.0"; \
 					print "\n" \
