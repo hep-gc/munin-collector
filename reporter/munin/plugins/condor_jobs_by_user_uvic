@@ -41,7 +41,7 @@
             $cloud{$x[1]}=$x[0];
         }
 
-        @jobs=`condor_q -running  | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
+        @jobs=`condor_q -run  | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
         foreach $job (@jobs) {
             @x = split(/[\s\@\n]+/, $job);
             if ($cloud{$x[2]} eq '') {
