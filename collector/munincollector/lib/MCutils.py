@@ -25,7 +25,7 @@ MuninValueTypes = {
 # Check the currency of the plugin configuration cache.
 def CachePluginCheck (MCconfig, PluginConfigs):
 
-    last_cache_update = LastCacheUpdate()
+    last_cache_update = LastCacheUpdate(MCconfig)
 
     if PluginConfigs['Timestamp'] < last_cache_update:
         original_timestamp = PluginConfigs['Timestamp']
@@ -34,9 +34,9 @@ def CachePluginCheck (MCconfig, PluginConfigs):
             time.sleep(1)
             slept += 1
             PluginConfigs['Timestamp'] = int(time.time())
-            last_cache_update = LastCacheUpdate()
+            last_cache_update = LastCacheUpdate(MCconfig)
 
-        Logger(MCconfig, 3, 'MCutils', 'CachePluginCheck: Updating cache, original_timestamp=' + str(original_timestamp + ', last_cache_update=' + str(last_cache_update) + ', PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', slept=' + str(slept) + '.')
+        Logger(MCconfig, 3, 'MCutils', 'CachePluginCheck: Updating cache, original_timestamp=' + str(original_timestamp) + ', last_cache_update=' + str(last_cache_update) + ', PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', slept=' + str(slept) + '.')
         CachePluginConfigs (MCconfig, PluginConfigs)
 
 
@@ -222,7 +222,7 @@ def IpToInt( Ip ):
 
     return host_addr_1 + host_addr_2
 
-def LastCacheUPdate (MCconfig, PluginConfigs):
+def LastCacheUpdate (MCconfig):
 
     cache_file = open(MCconfig['PluginDir'] + '/config/.last_updated', 'r')
     last_cache_update = os.fstat(cache_file.fileno())[ST_CTIME]
