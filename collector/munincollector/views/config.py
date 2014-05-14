@@ -69,7 +69,7 @@ class ReadConfig(object):
                     if os.path.exists(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin):
                         p1 = Popen(['readlink', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
                         p2 = Popen(['xargs', '-L', '1', 'basename'], stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
-                        old_hash = p2.communicate()[0]
+                        old_hash = p2.communicate()[0][:-1]
                         if old_hash != hash:
                             p = Popen(['rm', '-f', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
                             MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '(' + old_hash + ').')
