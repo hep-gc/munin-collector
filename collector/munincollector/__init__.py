@@ -204,7 +204,7 @@ def main(global_config, **settings):
 
     time_ranges.close()
 
-    MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
+    MCutils.CachePluginCheck(MCconfig, PluginConfigs)
 
     config = Configurator(root_factory=Root, settings=settings)
     config.add_settings({'MCconfig': MCconfig})

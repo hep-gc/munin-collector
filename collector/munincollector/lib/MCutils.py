@@ -29,10 +29,11 @@ def CachePluginCheck (MCconfig, PluginConfigs):
     last_cache_update = os.fstat(cache_file.fileno())[ST_CTIME]
     cache_file.close()
 
-    if PluginConfigs['Timestamp'] < last_cache_update + 1:
+    if PluginConfigs['Timestamp'] < last_cache_update:
         Logger(MCconfig, 3, 'MCutils', 'CachePluginCheck: Updating cache, PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', last_cache_update=' + str(last_cache_update) + '.')
+        time.sleep(5)
         CachePluginConfigs (MCconfig, PluginConfigs)
-        PluginConfigs['Timestamp'] += 1
+        PluginConfigs['Timestamp'] = int(time.time())
 
 
 # Cache plugin configuration.
@@ -47,7 +48,6 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
         hosts = hosts.splitlines()
 
         for host in hosts:
-            snapshot_time = int(time.time())
             p = Popen(['ls', '-l', MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
             links, stderr = p.communicate()
             if stderr == '':
@@ -70,12 +70,10 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
                             link_file.close()
 
                             PluginConfigs['Timestamps']['s1'] += [ (link_timestamp, host, plugin) ]
-                            PluginConfigs['Timestamp'] = snapshot_time
 
                             Logger(MCconfig, 4, 'MCutils', 'Link added for host=' + host + ', plugin=' + plugin + ', hash=' + hash + '.')
 
     Logger(MCconfig, 4, 'MCutils', 'Stage 2: Cache plugin configs - PluginConfigs[\'config\'][<hash>][<mgid>][<key>] = <value>')
-    snapshot_time = int(time.time())
     p = Popen(['ls', MCconfig['PluginDir'] + '/config'], stdout=PIPE, stderr=PIPE)
     hashes, stderr = p.communicate()
     if stderr == '':
@@ -108,7 +106,6 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
                     if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
                         mgid = key_value[1]
                         PluginConfigs['Timestamps']['s2'] += [ (hash_timestamp, mgid) ]
-                        PluginConfigs['Timestamp'] = snapshot_time
                         continue
 
                     if not PluginConfigs['config'].has_key(hash):
