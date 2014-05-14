@@ -65,7 +65,17 @@ class ReadConfig(object):
                         MCutils.Logger(MCconfig, 1, 'config', 'Unable to obtain config file lock.')
                         return Response('munin-collector-config: unable to obtain config file lock.\n')
 
-                    # If it doesn't already exist, create host link to the plugin configuration hash.
+                    # If the host link to the plugin configuration hash already exists and the new hash and the old hash differ, delete the obsolete symlink.
+                    if os.path.exists(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin):
+                        p1 = Popen(['readlink', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
+                        p2 = Popen(['xargs', '-L', '1', 'basename'], stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
+                        old_hash = p2.communicate()[0]
+                        if old_hash != hash:
+                        p = Popen(['rm', '-f', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
+                        MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '.')
+
+
+                    # If the host link to the plugin configuration hash does not exist (we might have just deleted an obsolete symlink), create it.
                     if not os.path.exists(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin):
                         p = Popen(['ln', '-s', '-f', 
                             MCconfig['PluginDir'] + '/config/' + hash, 
