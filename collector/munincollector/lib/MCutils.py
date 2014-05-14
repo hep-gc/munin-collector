@@ -30,7 +30,7 @@ def CachePluginCheck (MCconfig, PluginConfigs):
     cache_file.close()
 
     if PluginConfigs['Timestamp'] < last_cache_update + 1:
-        Logger(MCconfig, 4, 'MCutils', 'CachePluginCheck: Updating cache, PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', last_cache_update=' + str(last_cache_update) + '.')
+        Logger(MCconfig, 3, 'MCutils', 'CachePluginCheck: Updating cache, PluginConfigs[\'Timestamp\']=' + str(PluginConfigs['Timestamp']) + ', last_cache_update=' + str(last_cache_update) + '.')
         CachePluginConfigs (MCconfig, PluginConfigs)
         PluginConfigs['Timestamp'] += 1
 
