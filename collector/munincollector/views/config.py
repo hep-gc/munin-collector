@@ -72,7 +72,7 @@ class ReadConfig(object):
                         old_hash = p2.communicate()[0]
                         if old_hash != hash:
                             p = Popen(['rm', '-f', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
-                            MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '.')
+                            MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '(' + old_hash + ').')
 
 
                     # If the host link to the plugin configuration hash does not exist (we might have just deleted an obsolete symlink), create it.
@@ -91,7 +91,7 @@ class ReadConfig(object):
                         # Update the timestamp.
                         open(MCconfig['PluginDir'] + '/config/.last_updated', 'w').close()
 
-                        MCutils.Logger(MCconfig, 3, 'config', 'New config link created, host=' + host + ', plugin=' + plugin + '.')
+                        MCutils.Logger(MCconfig, 3, 'config', 'New config link created, host=' + host + ', plugin=' + plugin + '(' + hash + ').')
 
                     # First reporter creates the plugin configuration hash.
                     if os.path.exists(MCconfig['PluginDir'] + '/config/' + hash):
