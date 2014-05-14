@@ -71,8 +71,8 @@ class ReadConfig(object):
                         p2 = Popen(['xargs', '-L', '1', 'basename'], stdin=p1.stdout, stdout=PIPE, stderr=STDOUT)
                         old_hash = p2.communicate()[0]
                         if old_hash != hash:
-                        p = Popen(['rm', '-f', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
-                        MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '.')
+                            p = Popen(['rm', '-f', MCconfig['PluginDir'] + '/links/' + host + '/' + plugin], stdout=PIPE, stderr=STDOUT)
+                            MCutils.Logger(MCconfig, 3, 'config', 'Obsolete config link deleted, host=' + host + ', plugin=' + plugin + '.')
 
 
                     # If the host link to the plugin configuration hash does not exist (we might have just deleted an obsolete symlink), create it.
