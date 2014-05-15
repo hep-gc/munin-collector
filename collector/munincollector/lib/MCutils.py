@@ -42,7 +42,17 @@ def CachePluginCheck (MCconfig, PluginConfigs):
 
 # Cache plugin configuration.
 def CachePluginConfigs (MCconfig, PluginConfigs):
-    # Update the timestamp for the last cache refresh.
+    # Clear plugin configuration cache.
+    PluginConfigs['config'] = {}
+    PluginConfigs['datasource'] = {}
+    PluginConfigs['links'] = {}
+    PluginConfigs['resolved'] = {}
+    PluginConfigs['DomainTree'] = {}
+    PluginConfigs['PluginTree'] = {}
+    PluginConfigs['DomainXref'] = []
+    PluginConfigs['HostXref'] = []
+    PluginConfigs['PluginXref'] = []
+    PluginConfigs['MgidXref'] = []
 
     Logger(MCconfig, 4, 'MCutils', 'Stage 1: Cache plugin links - PluginConfigs[\'links\'][<host>][<plugin>] = <hash>')
     hash_offset = len(MCconfig['PluginDir'] + '/config/')
@@ -180,6 +190,8 @@ def CachePluginConfigs (MCconfig, PluginConfigs):
 
         if not s2[1] in PluginConfigs['MgidXref']:
             PluginConfigs['MgidXref'] += [ s2[1] ]
+
+    PluginConfigs['Timestamp'] = int(time.time())
 
 # Scan AllowedDomains. Return 'True', if the specified host is within an allowed domain. Otherwise return 'False'.
 def CheckAllowedDomains( AllowedDomains, HostAddr ):

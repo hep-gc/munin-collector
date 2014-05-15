@@ -20,14 +20,13 @@ Palette = (
     )
 
 def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
-    # Verify that the plugin configuration cache is up to date.
-    MCutils.CachePluginCheck(MC, PC)
-
     if (plugin in Plugins or
         str(PC['PluginXref'].index(plugin)) + '.' + 
         str(PC['MgidXref'].index(mgid)) + '.' +
         str(PC['DomainXref'].index(domain)) + '.' +
         str(PC['HostXref'].index(host)) in CheckedBoxes):
+
+        MCutils.Logger(MC, 3, 'show', 'Drawing graph: ' + host + '.' + domain + ', ' + plugin + ', ' + mgid + ', ' + PC['links'][host][plugin] + '.')
 
         if not PC['resolved'][PC['links'][host][plugin]]:
             PC['resolved'][PC['links'][host][plugin]] = True
@@ -464,6 +463,9 @@ class DisplayMetrics(object):
 
                                     if not host in PrunedPlugins[plugin][mgid][domain]:
                                         PrunedPlugins[plugin][mgid][domain] += [host]
+
+            # Verify that the plugin configuration cache is up to date.
+            MCutils.CachePluginCheck(MCconfig, PluginConfigs)
 
             if CheckedBoxes[0] == 'p':
                 for plugin in sorted(PrunedPlugins.keys()):
