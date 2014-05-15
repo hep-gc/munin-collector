@@ -91,6 +91,7 @@ class ReadValue(object):
                 p = Popen(update_command, stdout=PIPE, stderr=PIPE)
                 stdout, stderr = p.communicate()
                 if stderr != '':
+                    MCutils.Logger(MCconfig, 2, 'value', 'Error return from rrdtool update, stderr: ' + stderr)
                     pp = re.search(' illegal attempt to update using time ', stderr)
                     while pp:
                         value_list = value_list[1:]
