@@ -90,10 +90,11 @@
         $CacheMap{$CacheKey} = 1;
     }
 
-    @x = `redis-cli -h $Config{'RedisHost'} -p $Config{"RedisPort'} get CacheRefresh`;
+    @x = `redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} get CacheRefresh`;
     $RefreshSwitch = $x[0] % $Config{'CacheRefresh'};
     $CacheRefresh = $x[0] + 1;
-    system("redis-cli -h $Config{'RedisHost'} -p $Config{"RedisPort'} set CacheRefresh '$CacheRefresh' >/dev/null");
+    system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set CacheRefresh '$CacheRefresh' >/dev/null");
+    print "Cache refresh switch=$RefreshSwitch\n" if $Testing;
 
 #
 #   If the hostname variable is not set in Redis, set it.
