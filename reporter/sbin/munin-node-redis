@@ -25,53 +25,59 @@
 		}
 
 #
-#	Retrieve the host and port for the Redis server.
+#	Set configuration defaults.
 #
-	$Hostname = `hostname`; chop($Hostname);
-	$RedisHost = `host $Hostname | awk '{print \$4}'`;
-	chop($RedisHost);
-	$RedisPort = 6379;
+	$Config{'Hostname'} = `hostname`; chop($Config{'Hostname'});
+	$Config{'RedisHost'} = `host $Config{'Hostname'} | awk '{print \$4}'`;
+	chop($Config{'RedisHost'});
+	$Config{'RedisPort'} = 6379;
+    $Config{'StackIDs'} = '127.0.0.1';
+    $Config{'PluginConfigRefresh'} = 48;
+
+#
+#	Retrieve the host and port from the redis configuration file.
+#
 	@x = `awk '/^bind|^port /' $redis_conf/redis.conf`;
 	foreach $x (@x) {
 		@y = split(/[\s\n]+/, $x);
 		if ($y[0] eq 'bind') {
-			$RedisHost  = $y[1];
+			$Config{'RedisHost'}  = $y[1];
 		} elsif ($y[0] eq 'port') {
-			$RedisPort  = $y[1];
+			$Config{'RedisPort'}  = $y[1];
 		}
 	}
 
-#
-#	Retrieve the IP address for all configured Munin masters.
-#
-	@x = `awk '/^host_name |^allow /' $munin_conf/munin-node.conf`;
-	foreach $x (@x) {
-		@y = split(/[\s\n]+/, $x);
-		if ($y[0] eq 'host_name') {
-			$Hostname  = $y[1];
-		} elsif ($y[0] eq 'allow') {
-			# ($y[1] = $y[1]) =~ s/[\\\^\$]//g;
-			$y[1] =~ s/[\\\^\$]//g;
-			splice(@MuninMasters,$#MuninMasters+1,0,$y[1]);
-		}
-	}
 
 #
-#	Check for and process munin-node-redis.conf.
+#	Process our configuration file.
 #
-	if (-e "$conf_dir/munin-node-redis.conf") {
-		@MuninMasters = `awk '!/^#/' $conf_dir/munin-node-redis.conf | awk '/[0-9]/ {gsub(/\,/,""); split(\$0,a); for(w in a) print \$w}'`;
-		for ($i=0; $i<=$#MuninMasters; $i++) {
-			chop($MuninMasters[$i]);
-		}
-	}
+    @config = `cat $conf_dir/munin-node-redis.conf`;
+    foreach $statement (@config) {
+        chop($statement);
+        next if $statement eq '' || substr($statement,0,1) eq '#';
+        if ($statement =~ /=/) {
+            ($key, $value) = split('=', $statement, 2);
+            $key = sprintf('\%%\(%s\)s', $key);
+            $value =~ s/^\s+//; $value =~ s/\s+$//;
+            $ConfigVar{$key} = $value;
+        } elsif ($statement =~ /:/) {
+            ($key, $value) = split(':', $statement, 2);
+            $value =~ s/^\s+//; $value =~ s/\s+$//;
+            $Config{$key} = $value;
+        }
+    }
+
+#
+#	Set the list of redis stacks from the configuration parameter.
+#
+    @Stacks = split(/[\s\t\n,]+/, $Config{'StackIDs'});
 
 #
 #	If testing, print the IP address of all configured Munin masters.
 #
 	if ($Testing) {
-		for ($i=0; $i<=$#MuninMasters; $i++) {
-			print "$MuninMasters[$i]\n";
+		for ($i=0; $i<=$#Stacks; $i++) {
+			print "$Stacks[$i]\n";
 		}
 	}
 
@@ -88,7 +94,7 @@
 	$newckpt = `ls -lL $munin_conf/plugins | sha1sum -`;
 	if ($oldckpt ne $newckpt) {
 		system("echo '$newckpt' >$dbdir/munin-node-redis-ckpt");
-		system("redis-cli -h $RedisHost -p $RedisPort del hostname >/dev/null");
+		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} del hostname >/dev/null");
 	}
 
 #
@@ -102,10 +108,10 @@
 #
 #	If the hostname variable is not set in Redis, set it ...
 #
-	@x = `redis-cli -h $RedisHost -p $RedisPort get hostname`;
+	@x = `redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} get hostname`;
 	if ($x[0] eq "\n" || $x[0] eq "(nil)\n") {
 		print "setting hostname\n" if $Testing;
-		system("redis-cli -h $RedisHost -p $RedisPort set hostname '$Hostname' >/dev/null");
+		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set hostname '$Config{'Hostname'}' >/dev/null");
 
 #
 #		... then for each plugin, stack its config.
@@ -113,7 +119,7 @@
 		foreach $plugin (@PluginList) {
 			$x = join('', `/usr/sbin/munin-run $plugin config`);
 			$x =~ s/[\n]/\\/g;
-			system("redis-cli -h $RedisHost -p $RedisPort set +Plugin:$plugin '$x' >/dev/null");
+			system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set +Plugin:$plugin '$x' >/dev/null");
 		}
 	}
 
@@ -134,12 +140,12 @@
 	RedisPush('<no-more> <plugin>\<data>');
 
 #
-#	Stack plogin data for each configured Munin master.
+#	Stack plugin data for each configured Munin master.
 #
 sub RedisPush() {
 	my ($i, $data);
 	$data = shift();
-	for ($i=0; $i<=$#MuninMasters; $i++) {
-		system("redis-cli -h $RedisHost -p $RedisPort rpush $MuninMasters[$i] '$data' >/dev/null");
+	for ($i=0; $i<=$#Stacks; $i++) {
+		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} rpush $Stacks[$i] '$data' >/dev/null");
 	}
 }
