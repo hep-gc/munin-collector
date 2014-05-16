@@ -21,7 +21,7 @@
 		exit;
 	}
 
-	@x = `rpm -qa | grep 'munin-node-1.4'`;
+	@x = `rpm -qa | grep 'munin-node'`;
 	if ($#x < 0) {
 		print "INSTALL.sh: You need to install munin-node-1.4.\n";
 		exit;
