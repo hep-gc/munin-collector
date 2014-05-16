@@ -4,12 +4,12 @@
 #	maintained for each configured Munin master node.
 
 #
-# 	Set command paths.
+#   Set command paths.
 #
 	$ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
 
 #
-# 	Set testing and debug switches.
+#   Set testing and debug switches.
 #
 	$Testing = 1;
 	$conf_dir = '/usr/local/etc';
@@ -17,7 +17,7 @@
 	$redis_conf = '/etc';
 
 #
-# 	Ensure we're running as root.
+#   Ensure we're running as root.
 #
         if (`whoami` ne "root\n") {
 			print "Command MUST be run as user 'root'.\n";
@@ -25,17 +25,17 @@
 		}
 
 #
-#	Set configuration defaults.
+#   Set configuration defaults.
 #
 	$Config{'Hostname'} = `hostname`; chop($Config{'Hostname'});
 	$Config{'RedisHost'} = `host $Config{'Hostname'} | awk '{print \$4}'`;
 	chop($Config{'RedisHost'});
 	$Config{'RedisPort'} = 6379;
     $Config{'StackIDs'} = '127.0.0.1';
-    $Config{'PluginConfigRefresh'} = 48;
+    $Config{'CacheRefresh'} = 48;
 
 #
-#	Retrieve the host and port from the redis configuration file.
+#   Retrieve the host and port from the redis configuration file.
 #
 	@x = `awk '/^bind|^port /' $redis_conf/redis.conf`;
 	foreach $x (@x) {
@@ -49,7 +49,7 @@
 
 
 #
-#	Process our configuration file.
+#   Process our configuration file.
 #
     @config = `cat $conf_dir/munin-node-redis.conf`;
     foreach $statement (@config) {
@@ -68,12 +68,12 @@
     }
 
 #
-#	Set the list of redis stacks from the configuration parameter.
+#   Set the list of redis stacks from the configuration parameter.
 #
     @Stacks = split(/[\s\t\n,]+/, $Config{'StackIDs'});
 
 #
-#	If testing, print the IP address of all configured Munin masters.
+#   If testing, print the IP address of all configured Munin masters.
 #
 	if ($Testing) {
 		for ($i=0; $i<=$#Stacks; $i++) {
@@ -82,41 +82,38 @@
 	}
 
 #
-#	Check for plugin config changes and reset checkpoint and Redis if it has changed.
+#   Map the plugin configuration cache content.
 #
-	$dbdir = '/tmp';
-	if (-e "$dbdir/munin-node-redis-ckpt") {
-		$oldckpt = `cat $dbdir/munin-node-redis-ckpt`;
-		chop($oldckpt);
-	} else {
-		$oldckpt = '<none>';
-	}
-	$newckpt = `ls -lL $munin_conf/plugins | sha1sum -`;
-	if ($oldckpt ne $newckpt) {
-		system("echo '$newckpt' >$dbdir/munin-node-redis-ckpt");
-		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} del hostname >/dev/null");
-	}
+    @x = `redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} keys '*' | awk '{print \$1}'`;
+    foreach $CacheKey (@x) {
+        chop($CacheKey);
+        $CacheMap{$CacheKey} = 1;
+    }
+
+    @x = `redis-cli -h $RedisHost -p $RedisPort get CacheRefresh`;
+    $RefreshSwitch = $x[0] % $Config{'CacheRefresh'};
+    $CacheRefresh = $x[0] + 1;
+    system("redis-cli -h $RedisHost -p $RedisPort set CacheRefresh '$CacheRefresh' >/dev/null");
 
 #
-#	Retrieve the configured plugin list.
+#   If the hostname variable is not set in Redis, set it.
+#
+    if ($CacheMap{'hostname'} <> 1) {
+		print "setting hostname\n" if $Testing;
+		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set hostname '$Config{'Hostname'}' >/dev/null");
+    }
+
+#
+#   Retrieve the configured plugin list and set/reset the configuration cache.
 #
 	@PluginList = `ls $munin_conf/plugins`;
 	for ($i=0; $i<=$#PluginList; $i++) {
 		chop($PluginList[$i]);
 	}
 
-#
-#	If the hostname variable is not set in Redis, set it ...
-#
-	@x = `redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} get hostname`;
-	if ($x[0] eq "\n" || $x[0] eq "(nil)\n") {
-		print "setting hostname\n" if $Testing;
-		system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set hostname '$Config{'Hostname'}' >/dev/null");
-
-#
-#		... then for each plugin, stack its config.
-#
-		foreach $plugin (@PluginList) {
+    foreach $plugin (@PluginList) {
+        if ($CacheMap{"+Plugin:$plugin"} <> 1 || $RefreshSwitch == 0) {
+            print "setting +Plugin:$plugin\n" if $Testing;
 			$x = join('', `/usr/sbin/munin-run $plugin config`);
 			$x =~ s/[\n]/\\/g;
 			system("redis-cli -h $Config{'RedisHost'} -p $Config{'RedisPort'} set +Plugin:$plugin '$x' >/dev/null");
@@ -124,13 +121,13 @@
 	}
 
 #
-#	Current time in UTC.
+#   Current time in UTC.
 #
 	$time = `date -u +%s`;
 	chop($time);
 
 #
-#	Process the list of configured plugins. For each plugin, stack the plugin name, time, and data.	
+#   Process the list of configured plugins. For each plugin, stack the plugin name, time, and data.	
 #	
 	foreach $plugin (@PluginList) {
 		$x = join('', "$plugin $time\\", `/usr/sbin/munin-run $plugin`);
@@ -140,7 +137,7 @@
 	RedisPush('<no-more> <plugin>\<data>');
 
 #
-#	Stack plugin data for each configured Munin master.
+#   Stack plugin data for each configured Munin master.
 #
 sub RedisPush() {
 	my ($i, $data);
