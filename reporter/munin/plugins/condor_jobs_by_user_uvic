@@ -35,13 +35,33 @@
             }
         }
 
-        @vms=`cloud_status -m | awk 'NF>5 && !/^ID/ && !/^Total/ {print \$6 " " \$2}'`;
+        for ($i=0; $i<3; $i++) {
+            @vms=`cloud_status -m | awk 'NF>5 && !/^ID/ && !/^Total/ && !/8111\.\$/ && !/8111\?\$/ {print \$6 " " \$2}'`;
+            last if $#vms > 0;
+            system('sleep 30');
+        }
+
+        if ($#vms < 1) {
+            system "logger -t $0 'cloud_status -m' failed to retrieve data after $i attempts.\n";
+            exit;
+        }
+
         foreach $vm (@vms) {
             @x = split(/[\s\n]+/, $vm);
             $cloud{$x[1]}=$x[0];
         }
 
-        @jobs=`condor_q -run  | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
+        for ($i=0; $i<3; $i++) {
+            @jobs=`condor_q -running | awk 'NF>5 && !/Submitter:/ && !/RUN_TIME/ {print \$2 " " \$6}'`;
+            last if $#jobs > 0;
+            system('sleep 30');
+        }
+
+        if ($#jobs < 1) {
+            system "logger -t $0 'condor_q -running' failed to retrieve data after $i attempts.\n";
+            exit;
+        }
+
         foreach $job (@jobs) {
             @x = split(/[\s\@\n]+/, $job);
             if ($cloud{$x[2]} eq '') {
