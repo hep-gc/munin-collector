@@ -314,130 +314,170 @@ window.onload = function() {
 
             <h2>Options:</h2>
             <div id="options-section">    
-                 <div id="left">
-                    <br>Start Time
-                    <br>Time Range
-                    <br>Time Out
-                    <br>
-                    <br>Height
-                    <br>Width
-                    <br>Title Font Size
-                    <br>Axis Font Size
-                    <br>Vertical Label Font Size
-                    <br>Statistics Font Size
-                    <br>Graph Display Columns
-                    <br>
-                    <br>Title
-                    <br>
-                    <br>Graph Format
+              <table>
+                <tr>     
+                  <td width=250>Start Time</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Start Time: Specifies the origin for the \'x\' axis. If omitted, the value will be calculated by subtracting \'Time Range\' from the current time.'
+                      );"/>
+                    <input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ta-en" onclick="EnableDisable('ta','ta');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ta-ne" onclick="EnableDisable('ta','ta');" hidden />
+                    <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                    <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+                  </td>
+                </tr><tr>
+                  <td>Time Range</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Time Range: Specifies the number of hours represented by the \'x\' axis. The default value is 30, but a decimal value in the range of .5 to 100000 can be specified. If an Start Time is not specified, a relative start time will be calculated by subtracting the Time Range from the current time.'
+                      );"/>
+                    <input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="tr-en" onclick="EnableDisable('tr','tr');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="tr-ne" onclick="EnableDisable('tr','tr');" hidden />
+                    <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
+                    <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+                  </td>
+                </tr><tr>
+                  <td>Time Out</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Timeout: Specifies the number of seconds before graphs and the display are to be refreshed. A decimal value in the range of 60 to 3600 can be specified. NB: Although a default value of 300 seconds is provided, the timeout function is not activated unless the input field is enabled.'
+                      );"/>
+                    <input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="to-en" onclick="EnableDisable('to','to');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="to-ne" onclick="EnableDisable('to','to');" hidden />
+                  </td>
+                </tr>
+              </table>
 
-                </div>
+              <br>
 
-                <div id="right">
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Start Time: Specifies the origin for the \'x\' axis. If omitted, the value will be calculated by subtracting \'Time Range\' from the current time.'
-                            );"/>
-                        <input type="text" id="ta" name="${Options['ta']['disabled']}" value="${Options['ta']['value']}" size=48 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ta-en" onclick="EnableDisable('ta','ta');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ta-ne" onclick="EnableDisable('ta','ta');" hidden />
-                        <input onclick="TimeAdjust('tad');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
-                        <input onclick="TimeAdjust('tau');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+              <table>
+                <tr>     
+                  <td width=250>Height</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Height: Specifies the height of the graph in pixels. The default value is 100, but a decimal value in the range of 100 to 2400 can be specified.'
+                      );"/>
+                    <input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ht-en" onclick="EnableDisable('ht','ht');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ht-ne" onclick="EnableDisable('ht','ht');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Width</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Width: Specifies the width of the graph in pixels. The default value is 300, but a decimal value in the range of 100 to 2400 can be specified.'
+                      );"/>
+                    <input type="text" id="wd" name="${Options['wd']['disabled']}" value="${Options['wd']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="wd-en" onclick="EnableDisable('wd','wd');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="wd-ne" onclick="EnableDisable('wd','wd');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Title Font Size</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Title Font Size: Specifies the size of the fonts to be used for the graph title. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                      );"/>
+                    <input type="text" id="ft" name="${Options['ft']['disabled']}" value="${Options['ft']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ft-en" onclick="EnableDisable('ft','ft');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ft-ne" onclick="EnableDisable('ft','ft');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Axis Font Size</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Axis Font Size: Specifies the size of the fonts to be used for the unit markers on the \'X\' and \'Y\' axes. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                      );"/>
+                    <input type="text" id="fa" name="${Options['fa']['disabled']}" value="${Options['fa']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fa-en" onclick="EnableDisable('fa','fa');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fa-ne" onclick="EnableDisable('fa','fa');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Vertical Label Font Size</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Vertical Label Font Size: Specifies the size of the fonts to be used for the \'Y\' axis label. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                      );"/>
+                    <input type="text" id="fv" name="${Options['fv']['disabled']}" value="${Options['fv']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fv-en" onclick="EnableDisable('fv','fv');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fv-ne" onclick="EnableDisable('fv','fv');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Legend Font Size</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Legend Font Size: Specifies the size of the fonts to be used for both the graph\'s legend and the graph\'s statistics \(see \'Show Statistics\' below\). The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
+                      );"/>
+                    <input type="text" id="fs" name="${Options['fs']['disabled']}" value="${Options['fs']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fs-en" onclick="EnableDisable('fs','fs');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fs-ne" onclick="EnableDisable('fs','fs');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Show Statistics</td>
+                  <td>
+                    <div tal:condition="Options['ss']['value']=='n'">
+                      <input type="radio" name="ss" value="n" checked/>No
+                      <input type="radio" name="ss" value="y"/>Yes
+                    </div>
 
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Time Range: Specifies the number of hours represented by the \'x\' axis. The default value is 30, but a decimal value in the range of .5 to 100000 can be specified. If an Start Time is not specified, a relative start time will be calculated by subtracting the Time Range from the current time.'
-                            );"/>
-                        <input type="text" id="tr" name="${Options['tr']['disabled']}" value="${Options['tr']['value']}" size=16 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="tr-en" onclick="EnableDisable('tr','tr');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="tr-ne" onclick="EnableDisable('tr','tr');" hidden />
-                        <input onclick="TimeAdjust('trd');" tal:condition="len(Selections)>-1" type="button" value="&#60;"/>
-                        <input onclick="TimeAdjust('tru');" tal:condition="len(Selections)>-1" type="button" value="&#62;"/>
+                    <div tal:condition="Options['ss']['value']=='y'">
+                      <input type="radio" name="ss" value="n"/>No
+                      <input type="radio" name="ss" value="y" checked/>Yes
+                    </div>
+                  </td>
+                </tr><tr>
+                  <td>Graph Display Columns</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Graph Display Columns: Specifies the number of graphs in a row to be displayed on the web page. The default value is 2, but a decimal value in the range of 1 to 24 can be specified.'
+                      );"/>
+                    <input type="text" id="gc" name="${Options['gc']['disabled']}" value="${Options['gc']['value']}" size=8 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gc-en" onclick="EnableDisable('gc','gc');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gc-ne" onclick="EnableDisable('gc','gc');" hidden />
+                  </td>
+                </tr>
+              </table>
 
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Timeout: Specifies the number of seconds before graphs and the display are to be refreshed. A decimal value in the range of 60 to 3600 can be specified. NB: Although a default value of 300 seconds is provided, the timeout function is not activated unless the input field is enabled.'
-                            );"/>
-                        <input type="text" id="to" name="${Options['to']['disabled']}" value="${Options['to']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="to-en" onclick="EnableDisable('to','to');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="to-ne" onclick="EnableDisable('to','to');" hidden />
-                        <br>
+              <br>
 
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Height: Specifies the height of the graph in pixels. The default value is 100, but a decimal value in the range of 100 to 2400 can be specified.'
-                            );"/>
-                        <input type="text" id="ht" name="${Options['ht']['disabled']}" value="${Options['ht']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ht-en" onclick="EnableDisable('ht','ht');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ht-ne" onclick="EnableDisable('ht','ht');" hidden />
+              <table>
+                <tr>     
+                  <td width=250>Title</td>
+                  <td>
+                    <img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
+                      'Title: Specify a title text string to be used for all graphs generated. By default, a unique graph title is defined by the originating Munin plugin.'
+                      );"/>
+                    <input type="text" id="gt" name="${Options['gt']['disabled']}" value="${Options['gt']['value']}" size=48 />
+                    <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gt-en" onclick="EnableDisable('gt','gt');" />
+                    <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gt-ne" onclick="EnableDisable('gt','gt');" hidden />
+                  </td>
+                </tr><tr>
+                  <td>Graph Format</td>
+                  <td>
+                    <div tal:condition="Options['if']['value']=='PNG'">
+                      <input type="radio" name="if" value="PNG" checked/>PNG
+                      <input type="radio" name="if" value="SVG"/>SVG
+                      <input type="radio" name="if" value="CSV"/>CSV
+                    </div>
 
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Width: Specifies the width of the graph in pixels. The default value is 300, but a decimal value in the range of 100 to 2400 can be specified.'
-                            );"/>
-                        <input type="text" id="wd" name="${Options['wd']['disabled']}" value="${Options['wd']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="wd-en" onclick="EnableDisable('wd','wd');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="wd-ne" onclick="EnableDisable('wd','wd');" hidden />
+                    <div tal:condition="Options['if']['value']=='SVG'">
+                      <input type="radio" name="if" value="PNG"/>PNG
+                      <input type="radio" name="if" value="SVG" checked/>SVG
+                      <input type="radio" name="if" value="CSV"/>CSV
+                    </div>
 
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Title Font Size: Specifies the size of the fonts to be used for the graph title. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
-                            );"/>
-                        <input type="text" id="ft" name="${Options['ft']['disabled']}" value="${Options['ft']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="ft-en" onclick="EnableDisable('ft','ft');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="ft-ne" onclick="EnableDisable('ft','ft');" hidden />
-
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Axis Font Size: Specifies the size of the fonts to be used for the unit markers on the \'X\' and \'Y\' axes. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
-                            );"/>
-                        <input type="text" id="fa" name="${Options['fa']['disabled']}" value="${Options['fa']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fa-en" onclick="EnableDisable('fa','fa');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fa-ne" onclick="EnableDisable('fa','fa');" hidden />
-
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Vertical Label Font Size: Specifies the size of the fonts to be used for the \'Y\' axis label. The default value is 8, but a decimal value in the range of 6 to 32 can be specified.'
-                            );"/>
-                        <input type="text" id="fv" name="${Options['fv']['disabled']}" value="${Options['fv']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fv-en" onclick="EnableDisable('fv','fv');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fv-ne" onclick="EnableDisable('fv','fv');" hidden />
-
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Legend and Statistics Font Size: Specifies the size of the fonts to be used for both the graph\'s legend and the graph\'s statistics. The default value is 0, but a decimal value in the range of 0 to 32 can be specified. Specifying a value less then 6 disables statistics and they will not be displayed on the graphs. Specifying a value of 0 will display no statistics but the legend will use font size 8.'
-                            );"/>
-                        <input type="text" id="fs" name="${Options['fs']['disabled']}" value="${Options['fs']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="fs-en" onclick="EnableDisable('fs','fs');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="fs-ne" onclick="EnableDisable('fs','fs');" hidden />
-
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Graph Display Columns: Specifies the number of graphs in a row to be displayed on the web page. The default value is 2, but a decimal value in the range of 1 to 24 can be specified.'
-                            );"/>
-                        <input type="text" id="gc" name="${Options['gc']['disabled']}" value="${Options['gc']['value']}" size=8 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gc-en" onclick="EnableDisable('gc','gc');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gc-ne" onclick="EnableDisable('gc','gc');" hidden />
-                        <br>
-
-                    <br><img src="${request.static_url('munincollector:static/help.svg')}" onclick="OptionHelp(
-                            'Title: Specify a title text string to be used for all graphs generated. By default, a unique graph title is defined by the originating Munin plugin.'
-                            );"/>
-                        <input type="text" id="gt" name="${Options['gt']['disabled']}" value="${Options['gt']['value']}" size=48 />
-                        <img src="${request.static_url('munincollector:static/oneway_left.svg')}" id="gt-en" onclick="EnableDisable('gt','gt');" />
-                        <img src="${request.static_url('munincollector:static/noentry.svg')}" id="gt-ne" onclick="EnableDisable('gt','gt');" hidden />
-                        <br><br>
-
-                        <div tal:condition="Options['if']['value']=='PNG'">
-                            <input type="radio" name="if" value="PNG" checked/>PNG
-                            <input type="radio" name="if" value="SVG"/>SVG
-                            <input type="radio" name="if" value="CSV"/>CSV
-                        </div>
-
-                        <div tal:condition="Options['if']['value']=='SVG'">
-                            <input type="radio" name="if" value="PNG"/>PNG
-                            <input type="radio" name="if" value="SVG" checked/>SVG
-                            <input type="radio" name="if" value="CSV"/>CSV
-                        </div>
-
-                        <div tal:condition="Options['if']['value']=='CSV'">
-                            <input type="radio" name="if" value="PNG"/>PNG
-                            <input type="radio" name="if" value="SVG"/>SVG
-                            <input type="radio" name="if" value="CSV" checked/>CSV
-                        </div>
-
-                    <br><br><br><br>
-                </div>
+                    <div tal:condition="Options['if']['value']=='CSV'">
+                      <input type="radio" name="if" value="PNG"/>PNG
+                      <input type="radio" name="if" value="SVG"/>SVG
+                      <input type="radio" name="if" value="CSV" checked/>CSV
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <br><br><br>
             </div><!-- id="options-section"-->
 
         </form>

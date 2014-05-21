@@ -190,7 +190,7 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
                 graph_command += PC['config'][PC['links'][host][plugin]][mgid]['graph_args'].split()
 
 
-            if Options['fs']['value'] > 5:
+            if Options['ss']['value'] == 'y':
                 graph_command += [
                     'COMMENT:           ',
                     'COMMENT: Cur\:',
@@ -259,7 +259,7 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
                         ds_draw + ':' + ds_prefix + 'v' + ds + '#' + ds_colour + ':' + ds_label,
                         ]
 
-                    if Options['fs']['value'] > 5:
+                    if Options['ss']['value'] == 'y':
                         graph_command += [
                             'GPRINT:' + ds_prefix + 'v' + ds + ':LAST:%6.2lf%s',
                             'GPRINT:' + ds_prefix + 'i' + ds + ':MIN:%6.2lf%s',
@@ -269,7 +269,7 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
 
                     ds_ix += 1
 
-            if Options['fs']['value'] > 5:
+            if Options['ss']['value'] == 'y':
                 graph_command += [
                     'COMMENT:Last Updated\: ' + '\:'.join(time.ctime(ds_lastupdated).split(':')) + '\\r',
                     ]
@@ -344,8 +344,8 @@ class DisplayMetrics(object):
             # Vertical Label (UNIT) font size
             'fv': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 6, 'max': 32},
 
-            # Statistics (LEGEND) font size
-            'fs': {'type': 'int', 'disabled': 'disabled', 'value': 0, 'min': 0, 'max': 32},
+            # Legend (& Statistics) font size
+            'fs': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 6, 'max': 32},
 
             # Graph columns
             'gc': {'type': 'int', 'disabled': 'disabled', 'value': 2, 'min': 1, 'max': 24},
@@ -355,6 +355,9 @@ class DisplayMetrics(object):
 
             # Graph format
             'if': {'type': 'str', 'disabled': 'if', 'value': 'PNG'},
+
+            # Show Statistics) 
+            'ss': {'type': 'str', 'disabled': 'ss', 'value': 'n'},
 
             # Filter resources and graphs by selected time range.
             'tf': {'type': 'str', 'disabled': 'tf', 'value': 'Y'},
