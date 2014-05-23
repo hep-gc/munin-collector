@@ -80,8 +80,8 @@ window.onload = function() {
                         <div tal:repeat="graph Selections">
                             <tr tal:condition="repeat.graph.index%Options['gc']['value']==0"/>
                             <td>
-                                <span onclick="ToggleDisplay('graph-section');">${graph[0]}</span>
-                                <br/><img onclick="ToggleDisplay('graph-section');" src="${request.host_url}/${graph[1]}"/>
+                                <span onclick="ToggleDisplay('graph-section');"><img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12"> ${graph[0]}</span>
+                                <br/><a href="http://munin-collector.heprc.uvic.ca/stats/?h2=p_${graph[2]}&h3=1400860757.21&tf=Y&ht=500&wd=1000&ft=12&fa=12&fv=12&fs=12&ss=n&if=PNG" target="_blank"><img src="${request.host_url}/${graph[1]}"/></a>
                             </td>
                         </div>
                     </table>

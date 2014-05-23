@@ -20,12 +20,9 @@ Palette = (
     )
 
 def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plugin, mgid, domain, host):
-    if (plugin in Plugins or
-        str(PC['PluginXref'].index(plugin)) + '.' + 
-        str(PC['MgidXref'].index(mgid)) + '.' +
-        str(PC['DomainXref'].index(domain)) + '.' +
-        str(PC['HostXref'].index(host)) in CheckedBoxes):
+    grid_ref = str(PC['PluginXref'].index(plugin)) + '.' + str(PC['MgidXref'].index(mgid)) + '.' + str(PC['DomainXref'].index(domain)) + '.' + str(PC['HostXref'].index(host))
 
+    if (plugin in Plugins or grid_ref in CheckedBoxes):
         MCutils.Logger(MC, 3, 'show', 'Drawing graph: ' + host + '.' + domain + ', ' + plugin + ', ' + mgid + ', ' + PC['links'][host][plugin] + '.')
 
         if not PC['resolved'][PC['links'][host][plugin]]:
@@ -113,13 +110,11 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
                 image_format = ('.png', 'PNG')
 
             if ('no-long-names' in MC['Options'] or Options['ta']['disabled'] == 'disabled'):
-                graph_heading = host + '-' + mgid + image_format[0]
-#                graph_path = Options['h1']['value'] + '/' + graph_heading
-                graph_path = UsersIP + '/' + graph_heading
+                graph_heading = host + ' (' + mgid + ') '
             else:
-                graph_heading = host + '-' + mgid + '-' + str(Options['ta']['value']) + '-' + str(Options['tr']['value']) + '-' + str(Options['ht']['value']) + 'x' + str(Options['wd']['value']) + image_format[0]
-#                graph_path = Options['h1']['value'] + '/' + graph_heading
-                graph_path = UsersIP + '/' + graph_heading
+                graph_heading = host + ' (' + mgid + ',' + str(Options['ta']['value']) + ',' + str(Options['tr']['value']) + ',' + str(Options['ht']['value']) + ',' + str(Options['wd']['value']) + ',' + image_format[0] + ') '
+
+            graph_path = UsersIP + '/' + host + '_' + mgid + '_' + str(Options['ht']['value']) + '_' + str(Options['wd']['value']) + image_format[0]
 
             graph_command = [
                 'rrdtool',
@@ -292,7 +287,7 @@ def DrawGraphs(MC, PC, Plugins, CheckedBoxes, Options, Selections, UsersIP, plug
             p = Popen(graph_command, stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
 
-            Selections += [(graph_heading + stderr, graph_path)]
+            Selections += [(graph_heading + stderr, graph_path, grid_ref)]
             # End of Graph Generation.
 
 
@@ -348,7 +343,7 @@ class DisplayMetrics(object):
             'fs': {'type': 'int', 'disabled': 'disabled', 'value': 8, 'min': 6, 'max': 32},
 
             # Graph columns
-            'gc': {'type': 'int', 'disabled': 'disabled', 'value': 2, 'min': 1, 'max': 24},
+            'gc': {'type': 'int', 'disabled': 'disabled', 'value': 4, 'min': 1, 'max': 24},
 
             # Graph title
             'gt': {'type': 'str', 'disabled': 'disabled', 'value': ''},
