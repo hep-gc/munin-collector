@@ -1,0 +1,18 @@
+#!/bin/bash
+    if [ "X$1" == 'X' ]; then
+        echo "Synopsis: redis-stack-fix <delete_items_containing_this_string>"
+        exit
+    fi
+
+    stdout=`redis-cli lrange 127.0.0.1 0 -1 | grep $1`
+    IFS=$'\n'
+    list=($stdout)
+    unset IFS
+
+    declare -i total=0
+    echo "Deleting ${#list[@]} items."
+    for (( i=0; i<=${#list[@]}; i=$i+1 )); do
+        count=`redis-cli lrem '127.0.0.1' 0  "${list[$i]}"`
+        total=$total+$count
+    done
+    echo "${#list[@]} items deleted."
