@@ -356,6 +356,16 @@ class DisplayMetrics(object):
 
             # Filter resources and graphs by selected time range.
             'tf': {'type': 'str', 'disabled': 'tf', 'value': 'Y'},
+###
+
+            # specific domain
+            'd': {'type': 'str', 'disabled': 'disabled', 'value': ''},
+
+            # specific host
+            'h': {'type': 'str', 'disabled': 'disabled', 'value': ''},
+
+            # specific msgid
+            'm': {'type': 'str', 'disabled': 'disabled', 'value': ''},
 
             # Display graphs for a comma separated list of plugins.
             'p': {'type': 'str', 'disabled': 'disabled', 'value': ''},
@@ -404,8 +414,17 @@ class DisplayMetrics(object):
         # Process the resource selection (h2) parameter.
         CheckedBoxes = Options['h2']['value'].split('_')
 
+        # Process the domain selection (d) parameter.
+        Domains = Options['d']['value'].split(',')
+
+        # Process the host selection (h) parameter.
+        Hosts = Options['h']['value'].split(',')
+
         # Process the plugin selection (p) parameter.
         Plugins = Options['p']['value'].split(',')
+
+        # Process the mgid selection (m) parameter.
+        Mgids = Options['m']['value'].split(',')
 
         # Rationalize absolute start time ("ta") and relative start time/range ("tr") parameters.
         if (Options['ta']['disabled'] == 'disabled'):
@@ -414,8 +433,32 @@ class DisplayMetrics(object):
         elif (int(Options['ta']['value'] + (Options['tr']['value'] * 3600.0)) > Now):
             Options['tr']['value'] = float((Now - Options['ta']['value']) / 3600.0)
 
-        # Scan selections array to generate selected graphs.
         Selections = []
+
+        # If requested, generate specific graphs only and return null response.
+        if Options['d']['value'] != '' and Options['h']['value'] != '' and Options['p']['value'] != '' and Options['m']['value'] != '':
+            counts = [ 0, 0, 0, 0 ]
+            for domain in sorted(PluginConfigs['DomainTree'].keys()):
+                if domain in Domains:
+                    counts[0] += 1
+                    for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
+                        if host in Hosts:
+                            counts[1] += 1
+                            for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
+                                if plugin in Plugins:
+                                    counts[2] += 1
+                                    for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
+                                        if mgid in Mgids:
+                                            counts[3] += 1
+                                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+            if counts[0] < 1 or counts[1] < 1 or counts[2] < 1 or counts[3] < 1:
+                return Response('munin-collector-show: bad specific selection request (' + str(counts) + ').\n')
+            else:
+                return Response('ok' + str(counts))
+
+
+
+        # Othersie, scan selections array to generate selected graphs.
         if Options['tf']['value'] == 'Y':
             # Ensure time ranges are up to date.
             time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
