@@ -62,8 +62,8 @@ class ReadConfig(object):
                     try:
                         lock.acquire(timeout=10)
                     except:
-                        MCutils.Logger(MCconfig, 1, 'config', 'Unable to obtain config file lock.')
-                        return Response('munin-collector-config: unable to obtain config file lock.\n')
+                        MCutils.Logger(MCconfig, 1, 'config', 'Unable to obtain config file lock:' + hash + '.')
+                        return Response('munin-collector-config: unable to obtain config file lock:' + hash + '.\n')
 
                     # If the host link to the plugin configuration hash already exists and the new hash and the old hash differ, delete the obsolete symlink.
                     if os.path.exists(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin):
