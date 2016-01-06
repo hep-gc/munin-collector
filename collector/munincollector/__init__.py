@@ -204,9 +204,10 @@ def main(global_config, **settings):
 
     time_ranges.close()
 
-    MCutils.CachePluginCheck(MCconfig, PluginConfigs)
+    MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
 
     config = Configurator(root_factory=Root, settings=settings)
+    config.include('pyramid_chameleon')
     config.add_settings({'MCconfig': MCconfig})
     config.add_settings({'PluginConfigs': PluginConfigs})
     config.add_view('munincollector.views.alive.Check', name='alive')
