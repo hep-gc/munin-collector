@@ -43,12 +43,12 @@ def CachePluginCheck (MCconfig, PluginConfigs):
 # Cache plugin configuration.
 def CachePluginConfigs (MCconfig, PluginConfigs):
     # Clear plugin configuration cache.
-    PluginConfigs['config'] = {}
-    PluginConfigs['datasource'] = {}
-    PluginConfigs['links'] = {}
-    PluginConfigs['resolved'] = {}
-    PluginConfigs['DomainTree'] = {}
-    PluginConfigs['PluginTree'] = {}
+    PluginConfigs['config'] = {}     # PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+    PluginConfigs['datasource'] = {} # PluginConfigs['datasource'][hash][mgid] += [ds]
+    PluginConfigs['links'] = {}      # PluginConfigs['links'][host][plugin] = hash
+    PluginConfigs['resolved'] = {}   # PluginConfigs['resolved'][hash] = False
+    PluginConfigs['DomainTree'] = {} # PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+    PluginConfigs['PluginTree'] = {} # PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
     PluginConfigs['DomainXref'] = []
     PluginConfigs['HostXref'] = []
     PluginConfigs['PluginXref'] = []
