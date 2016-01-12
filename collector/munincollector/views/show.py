@@ -454,7 +454,8 @@ class DisplayMetrics(object):
             if counts[0] < 1 or counts[1] < 1 or counts[2] < 1 or counts[3] < 1:
                 return Response('munin-collector-show: bad specific selection request (' + str(counts) + ').\n')
             else:
-                return Response('ok' + str(counts))
+                # return Response('ok' + str(counts))
+                return Response('ok ' + str(self.request.remote_addr))
 
 
 
