@@ -367,8 +367,11 @@ class DisplayMetrics(object):
             # specific msgid
             'm': {'type': 'str', 'disabled': 'disabled', 'value': ''},
 
-            # Display graphs for a comma separated list of plugins.
+            # specific plugin
             'p': {'type': 'str', 'disabled': 'disabled', 'value': ''},
+
+            # specific graph return ('y') or generate.
+            'r': {'type': 'str', 'disabled': 'disabled', 'value': ''},
 
             }
 
@@ -437,29 +440,57 @@ class DisplayMetrics(object):
 
         # If requested, generate specific graphs only and return null response.
         if Options['d']['value'] != '' and Options['h']['value'] != '' and Options['p']['value'] != '' and Options['m']['value'] != '':
-            counts = [ 0, 0, 0, 0 ]
-            for domain in sorted(PluginConfigs['DomainTree'].keys()):
-                if domain in Domains:
-                    counts[0] += 1
-                    for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
-                        if host in Hosts:
-                            counts[1] += 1
-                            for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
-                                if plugin in Plugins:
-                                    counts[2] += 1
-                                    for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                                        if mgid in Mgids:
-                                            counts[3] += 1
-                                            DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
-            if counts[0] < 1 or counts[1] < 1 or counts[2] < 1 or counts[3] < 1:
-                return Response('munin-collector-show: bad specific selection request (' + str(counts) + ').\n')
+            if  Options['r']['value'] == 'y':
+                if not Options['d']['value'] in PluginConfigs['DomainXref']:
+                    return Response('munin-collector-show: unknown domain "' + Options['d']['value'] + '".\n')
+
+                if not Options['h']['value'] in PluginConfigs['HostXref']:
+                    return Response('munin-collector-show: unknown host "' + Options['h']['value'] + '".\n')
+
+                if not Options['p']['value'] in PluginConfigs['PluginXref']:
+                    return Response('munin-collector-show: unknown plugin "' + Options['p']['value'] + '".\n')
+
+                if not Options['m']['value'] in PluginConfigs['MgidXref']:
+                    return Response('munin-collector-show: unknown mgid "' + Options['m']['value'] + '".\n')
+
+                CheckedBoxes = [ str(PluginConfigs['PluginXref'].index(Options['p']['value'])) + '.' + str(PluginConfigs['MgidXref'].index(Options['m']['value'])) + '.' + str(PluginConfigs['DomainXref'].index(Options['d']['value'])) + '.' + str(PluginConfigs['HostXref'].index(Options['h']['value'])) ]
+                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, Options['p']['value'], Options['m']['value'], Options['d']['value'], Options['h']['value'])
+
+                return render_to_response('munincollector:templates/show.pt', {
+                    'request': self.request,
+                    'DT': PluginConfigs['DomainTree'],
+                    'PT': PluginConfigs['PluginTree'],
+                    'DX': PluginConfigs['DomainXref'],
+                    'HX': PluginConfigs['HostXref'],
+                    'PX': PluginConfigs['PluginXref'],
+                    'MX': PluginConfigs['MgidXref'],
+                    'Selections': Selections,
+                    'Options': Options,
+                    })
             else:
-                # return Response('ok' + str(counts))
-                return Response('ok ' + str(self.request.remote_addr))
+                counts = [ 0, 0, 0, 0 ]
+                for domain in sorted(PluginConfigs['DomainTree'].keys()):
+                    if domain in Domains:
+                        counts[0] += 1
+                        for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
+                            if host in Hosts:
+                                counts[1] += 1
+                                for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
+                                    if plugin in Plugins:
+                                        counts[2] += 1
+                                        for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
+                                            if mgid in Mgids:
+                                                counts[3] += 1
+                                                DrawGraphs(MCconfig, PluginConfigs, Plugins, CheckedBoxes, Options, Selections, self.request.remote_addr, plugin, mgid, domain, host)
+                if counts[0] < 1 or counts[1] < 1 or counts[2] < 1 or counts[3] < 1:
+                    return Response('munin-collector-show: bad specific selection request (' + str(counts) + ').\n')
+                else:
+                    # return Response('ok' + str(counts))
+                    return Response('ok ' + str(self.request.remote_addr))
 
 
 
-        # Othersie, scan selections array to generate selected graphs.
+        # Otherwise, scan selections array to generate selected graphs.
         if Options['tf']['value'] == 'Y':
             # Ensure time ranges are up to date.
             time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
