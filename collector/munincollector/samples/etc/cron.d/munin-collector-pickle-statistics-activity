@@ -4,4 +4,4 @@
 
 MAILTO=
 
-4 * * * *     root test -x /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-statistics-activity && /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-statistics-activity
+10 * * * *     root test -x /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-statistics-activity && /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-statistics-activity
