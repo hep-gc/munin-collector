@@ -53,7 +53,7 @@ class ReadConfig(object):
                 return Response('munin-collector-config: the data field is empty ("(nil)").\n')
 
             if host == 'localhost.localdomain':
-                MCutils.Logger(MCconfig, 2, 'config', 'Rejecting non-specific FQDN of "localhost.localdomain".')
+                MCutils.Logger(MCconfig, 2, 'config', 'Rejecting non-specific FQDN of "localhost.localdomain" from IP=' + str(self.request.remote_addr) + '.')
                 return Response('munin-collector-config: Rejecting non-specific FQDN of "localhost.localdomain".\n')
 
             p = Popen(['mkdir', '-p',  MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
@@ -143,6 +143,6 @@ class ReadConfig(object):
             if not check_params(Params, 'data', 0):
                 missing += ['data']
 
-            MCutils.Logger(MCconfig, 2, 'config', 'The following required fields are missing or invalid: ' + str(missing))
+            MCutils.Logger(MCconfig, 2, 'config', 'From IP=' + str(self.request.remote_addr) + ', the following required fields are missing or invalid: ' + str(missing))
             return Response('munin-collector-config: the following required fields are missing or invalid: ' + str(missing) +     '\n')
 

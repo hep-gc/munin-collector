@@ -148,6 +148,6 @@ class ReadValue(object):
 
         last_cache_update = os.stat(MCconfig['PluginDir'] + '/config/.last_updated')
 
-        MCutils.Logger(MCconfig, 2, 'value', bad_key + ', host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values + ', cache_time=' + str(PluginConfigs['Timestamp']) + ', config_time=' + str(last_cache_update.st_mtime) + '.')
+        MCutils.Logger(MCconfig, 2, 'value', bad_key + ', host=' + host + ' (' + str(self.request.remote_addr) + '), plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values + ', cache_time=' + str(PluginConfigs['Timestamp']) + ', config_time=' + str(last_cache_update.st_mtime) + '.')
         return Response('munin-collector-value: ' + bad_key + '.\n')
 
