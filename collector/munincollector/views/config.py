@@ -52,6 +52,10 @@ class ReadConfig(object):
                 MCutils.Logger(MCconfig, 2, 'config', 'Returning data field is empty.')
                 return Response('munin-collector-config: the data field is empty ("(nil)").\n')
 
+            if host == 'localhost.localdomain':
+                MCutils.Logger(MCconfig, 2, 'config', 'Rejecting non-specific FQDN of "localhost.localdomain".')
+                return Response('munin-collector-config: Rejecting non-specific FQDN of "localhost.localdomain".\n')
+
             p = Popen(['mkdir', '-p',  MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
             stdout, stderr = p.communicate()
             if stderr == '':
