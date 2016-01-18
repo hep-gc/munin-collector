@@ -1,0 +1,13 @@
+#!/bin/env python
+import ConfigParser
+import os
+import cPickle
+import time
+from stat import *
+from subprocess import PIPE, Popen, STDOUT
+
+os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
+
+#data = cPickle.load( open( '/var/lib/munin-collector/plugin/pickles/PluginConfigs', "rb" ) )
+data = cPickle.load( open( '/var/lib/munin-collector/plugin/pickles/StatisticsActivity', "rb" ) )
+print str(data)

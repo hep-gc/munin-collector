@@ -1,0 +1,345 @@
+#!/bin/env python
+import ConfigParser
+import os
+import cPickle
+import time
+from stat import *
+from subprocess import PIPE, Popen, STDOUT
+import sys
+
+os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
+
+# Return the domain from the specified full host name.
+def GetDomain( host ):
+    words = host.split('.')
+    del words[0]
+    return '.'.join(words)
+
+def StrToInt( str ):
+# convert the given string to an integer.
+    try:
+        result = int(str)
+    except ValueError:
+        result = 0
+    return result
+
+def SysPrint( str ):
+    if sys.stdout.isatty():
+        print str
+    else:
+        p = Popen(['logger', 'munin-collector-pickle-plugin-configs: ' + str], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = p.communicate()
+
+# Read and process our configuration file.
+ConfigurationFile = '/usr/local/etc/munin-collector.conf'
+if not os.path.exists(ConfigurationFile):
+    ConfigurationFile = global_config['here'] + '/munincollector/samples/etc/munin/munin-collector.conf'
+
+AllowedDomains = []
+HostAllowed = {}
+Options = []
+
+if not os.path.exists(ConfigurationFile):
+    SysPrint("Configuration file '%s' does not exist." % ConfigurationFile)
+    quit()
+else:
+    config_file = ConfigParser.ConfigParser()
+
+    try:
+        config_file.read(ConfigurationFile)
+    except IOError:
+        SysPrint("Configuration file problem: There was a " \
+        "problem reading %s. Check that it is readable," \
+        "and that it exists. " % ConfigurationFile)
+        quit()
+    except ConfigParser.ParsingError:
+        SysPrint("Configuration file problem: Couldn't " \
+        "parse your file. Check for spaces before or after variables.")
+        quit()
+    except:
+        SysPrint("Configuration file problem: There is something wrong with " \
+        "your config file.")
+        quit()
+
+    if config_file.has_option("munin-collector", "DataDir"):
+        DataDir = config_file.get("munin-collector", "DataDir")
+    else:
+        SysPrint("Configuration file did not specify a path for 'DataDir'.")
+        quit()
+
+    if config_file.has_option("munin-collector", "ImageDir"):
+        ImageDir = config_file.get("munin-collector", "ImageDir")
+    else:
+        SysPrint("Configuration file did not specify a path for 'ImageDir'.")
+        quit()
+
+    if config_file.has_option("munin-collector", "LockDir"):
+        LockDir = config_file.get("munin-collector", "LockDir")
+    else:
+        SysPrint("Configuration file did not specify a path for 'LockDir'.")
+        quit()
+
+    if config_file.has_option("munin-collector", "LogLevel"):
+        LogLevel = int(config_file.get("munin-collector", "LogLevel"))
+    else:
+        SysPrint("Configuration file did not specify a value for 'LogLevel'.")
+        quit()
+
+    if config_file.has_option("munin-collector", "PluginDir"):
+        PluginDir = config_file.get("munin-collector", "PluginDir")
+    else:
+        SysPrint("Configuration file did not specify a path for 'PluginDir'.")
+        quit()
+
+    if config_file.has_option("munin-collector", "Domains"):
+        domain_string = config_file.get("munin-collector", "Domains")
+
+        domains = domain_string.split(',')
+        for domain in domains:
+            words = domain.strip().split('/')
+            if len(words) < 1 or len(words) > 2:
+                SysPrint("Domains contained an invalid specification: '%s' - too many '/'s." % domain)
+                quit()
+
+            if ':' in words[0]:
+                partitions = words[0].partition('::')
+                nibbles_1 =  partitions[0].split(':')
+                if partitions[1] == '::':
+                    nibbles_2 =  partitions[2].split(':')
+                nibble_bits = 16
+                nibble_count = 8
+            else:
+                nibbles_1 = words[0].split('.')
+                nibbles_2 = ()
+                nibble_bits = 8
+                nibble_count = 4
+
+            if len(words) == 1:
+                subnet_bits = nibble_bits * nibble_count
+            else:
+                subnet_bits = StrToInt(words[1])
+
+            if len(nibbles_1) + len(nibbles_2) > nibble_count:
+                SysPrint("Domains contained an invalid specification: '%s' - too many octets/hextets." % domain)
+                quit()
+
+            if subnet_bits > nibble_bits * nibble_count:
+                SysPrint("Domains contained an invalid specification: '%s' - too many subnet bits." % domain)
+                quit()
+
+            host_bits = (nibble_bits * nibble_count) - subnet_bits
+            max_domain_host_count = (2 ** host_bits)
+
+            domain_min_ip_1 = 0
+            for ix in range(nibble_count):
+                domain_min_ip_1 = domain_min_ip_1 * (2 ** nibble_bits)
+                if len(nibbles_1) > ix:
+                    domain_min_ip_1 += StrToInt(nibbles_1[ix])
+
+            domain_min_ip_2 = 0
+            for ix in range(len(nibbles_2)):
+                domain_min_ip_2 = domain_min_ip_2 * (2 ** nibble_bits)
+                domain_min_ip_2 += StrToInt(nibbles_2[ix])
+
+            domain_min_ip = int((domain_min_ip_1 + domain_min_ip_2) / max_domain_host_count) * max_domain_host_count
+            domain_max_ip = domain_min_ip + (2 ** host_bits) - 1
+            AllowedDomains += [(domain_min_ip, domain_max_ip)]
+
+        AllowedDomains = sorted(AllowedDomains)
+
+    if config_file.has_option("munin-collector", "Options"):
+        option_string = config_file.get("munin-collector", "Options")
+
+        options = option_string.split(',')
+        for option in options:
+            option = option.strip()
+            if not option in Options:
+                Options += [option]
+
+        Options = sorted(Options)
+
+# Ensure that each required directory exists.
+p = Popen(['mkdir', '-p', DataDir], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+p = Popen(['mkdir', '-p', ImageDir], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+p = Popen(['mkdir', '-p', LockDir], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+p = Popen(['mkdir', '-p', PluginDir + '/config'], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+p = Popen(['mkdir', '-p', PluginDir + '/links'], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+p = Popen(['mkdir', '-p', PluginDir + '/pickles'], stdout=PIPE, stderr=PIPE)
+stdout, stderr = p.communicate()
+
+MCconfig = {
+    'DataDir': DataDir,
+    'ImageDir': ImageDir,
+    'LockDir': LockDir,
+    'LogLevel': LogLevel,
+    'PluginDir': PluginDir,
+    'AllowedDomains': AllowedDomains,
+    'HostAllowed': HostAllowed,
+    'Options': Options,
+    }
+
+# Exit if the current pickle ($PluginDir/pickles/PluginConfigs) is newer than
+# the last config change ($PluginDir/config/.last_updated).
+config_status = os.stat(PluginDir + '/config/.last_updated')
+pickle_status = os.stat(PluginDir + '/pickles/PluginConfigs')
+if pickle_status.st_mtime > config_status.st_mtime:
+    SysPrint('Exiting: no plugin config updates since the last pickle update.')
+    quit()
+
+# Cache plugin configuration.
+PluginConfigs = {}
+PluginConfigs['config'] = {}     # PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+PluginConfigs['datasource'] = {} # PluginConfigs['datasource'][hash][mgid] += [ds]
+PluginConfigs['links'] = {}      # PluginConfigs['links'][host][plugin] = hash
+PluginConfigs['resolved'] = {}   # PluginConfigs['resolved'][hash] = False
+PluginConfigs['DomainTree'] = {} # PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+PluginConfigs['PluginTree'] = {} # PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
+PluginConfigs['DomainXref'] = []
+PluginConfigs['HostXref'] = []
+PluginConfigs['PluginXref'] = []
+PluginConfigs['MgidXref'] = []
+PluginConfigs['Timestamps'] = { 's1': [], 's2': [] }
+
+hash_offset = len(MCconfig['PluginDir'] + '/config/')
+p = Popen(['ls', MCconfig['PluginDir'] + '/links'], stdout=PIPE, stderr=PIPE)
+hosts, stderr = p.communicate()
+if stderr == '':
+    hosts = hosts.splitlines()
+
+    for host in hosts:
+        p = Popen(['ls', '-l', MCconfig['PluginDir'] + '/links/' + host], stdout=PIPE, stderr=PIPE)
+        links, stderr = p.communicate()
+        if stderr == '':
+            links = links.splitlines()
+
+            for link in links:
+                words = link.split()
+                if len(words) >= 11:
+                    plugin = words[8]
+                    hash = words[10][hash_offset:]
+
+                    if not PluginConfigs['links'].has_key(host):
+                        PluginConfigs['links'][host] = {}
+
+                    if not PluginConfigs['links'][host].has_key(plugin):
+                        PluginConfigs['links'][host][plugin] = hash
+
+                        link_file = open(MCconfig['PluginDir'] + '/links/' + host + '/' + plugin, 'r')
+                        link_timestamp = os.fstat(link_file.fileno())[ST_CTIME]
+                        link_file.close()
+
+                        PluginConfigs['Timestamps']['s1'] += [ (link_timestamp, host, plugin) ]
+
+
+p = Popen(['ls', MCconfig['PluginDir'] + '/config'], stdout=PIPE, stderr=PIPE)
+hashes, stderr = p.communicate()
+if stderr == '':
+    hashes = hashes.splitlines()
+    for hash in hashes:
+        if not PluginConfigs['config'].has_key(hash):
+            # Wait for the hash to age before processing.
+            while 1:
+                hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
+                hash_age = time.time() - os.fstat(hash_file.fileno())[ST_CTIME]
+                hash_file.close()
+                if hash_age > 5:
+                    break
+
+                time.sleep(5)
+
+            hash_file = open(MCconfig['PluginDir'] + '/config/' + hash, 'r')
+            hash_timestamp = os.fstat(hash_file.fileno())[ST_CTIME]
+            lines = hash_file.readlines()
+            hash_file.close()
+            for line in lines:
+                line = line.strip()
+                if line == '' or line == '(nil)':
+                    continue
+
+                key_value = line.split(' ', 1)
+
+                if key_value[0] == 'pluginname' or key_value[0] == 'multigraph':
+                    mgid = key_value[1]
+                    PluginConfigs['Timestamps']['s2'] += [ (hash_timestamp, mgid) ]
+                    continue
+
+                if not PluginConfigs['config'].has_key(hash):
+                    PluginConfigs['config'][hash] = {}
+                    PluginConfigs['resolved'][hash] = False
+
+                if not PluginConfigs['config'][hash].has_key(mgid):
+                    PluginConfigs['config'][hash][mgid] = {}
+
+                PluginConfigs['config'][hash][mgid][key_value[0]] = key_value[1]
+
+                # PluginConfigs['datasource'][hash][<mgid>] = [<ds>, <ds>, ...]
+                words = key_value[0].split(".")
+                if len(words) == 2:
+                    ds = words[0]
+                    if not PluginConfigs['datasource'].has_key(hash):
+                        PluginConfigs['datasource'][hash] = {}
+
+                    if not PluginConfigs['datasource'][hash].has_key(mgid):
+                        PluginConfigs['datasource'][hash][mgid] = []
+
+                    if not ds in PluginConfigs['datasource'][hash][mgid]:
+                        PluginConfigs['datasource'][hash][mgid] += [ds]
+
+for host in PluginConfigs['links']:
+    domain = GetDomain(host)
+    for plugin in PluginConfigs['links'][host]:
+        for mgid in PluginConfigs['config'][PluginConfigs['links'][host][plugin]]:
+            if not PluginConfigs['DomainTree'].has_key(domain):
+                PluginConfigs['DomainTree'][domain] = {}
+
+            if not PluginConfigs['DomainTree'][domain].has_key(host):
+                PluginConfigs['DomainTree'][domain][host] = {}
+
+            if not PluginConfigs['DomainTree'][domain][host].has_key(plugin):
+                PluginConfigs['DomainTree'][domain][host][plugin] = []
+
+            if not mgid in PluginConfigs['DomainTree'][domain][host][plugin]:
+                PluginConfigs['DomainTree'][domain][host][plugin] += [mgid]
+
+            if not PluginConfigs['PluginTree'].has_key(plugin):
+                PluginConfigs['PluginTree'][plugin] = {}
+
+            if not PluginConfigs['PluginTree'][plugin].has_key(mgid):
+                PluginConfigs['PluginTree'][plugin][mgid] = {}
+
+            if not PluginConfigs['PluginTree'][plugin][mgid].has_key(domain):
+                PluginConfigs['PluginTree'][plugin][mgid][domain] = []
+
+            if not host in PluginConfigs['PluginTree'][plugin][mgid][domain]:
+                PluginConfigs['PluginTree'][plugin][mgid][domain] += [host]
+
+for s1 in sorted(PluginConfigs['Timestamps']['s1']):
+    domain =GetDomain(s1[1])
+
+    if not domain in PluginConfigs['DomainXref']:
+        PluginConfigs['DomainXref'] += [ domain ]
+
+    if not s1[1] in PluginConfigs['HostXref']:
+        PluginConfigs['HostXref'] += [ s1[1] ]
+
+    if not s1[2] in PluginConfigs['PluginXref']:
+        PluginConfigs['PluginXref'] += [ s1[2] ]
+
+for s2 in sorted(PluginConfigs['Timestamps']['s2']):
+
+    if not s2[1] in PluginConfigs['MgidXref']:
+        PluginConfigs['MgidXref'] += [ s2[1] ]
+
+PluginConfigs['Timestamp'] = config_status.st_mtime
+cPickle.dump( PluginConfigs, open( PluginDir + '/pickles/PluginConfigs', "wb" ) )
+SysPrint('Pickle updated.')

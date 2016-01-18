@@ -33,7 +33,6 @@ class ReadConfig(object):
             return Response('munin-collector-config: not authorized.\n')
 
         Params = self.request.params
-        PluginConfigs = self.request.registry.settings['PluginConfigs']
 
         if (check_params(Params, 'host', 1) and 
             check_params(Params, 'plugin', 1) and 

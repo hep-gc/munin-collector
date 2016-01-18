@@ -36,8 +36,10 @@ class ReadValue(object):
 
             MCutils.Logger(MCconfig, 4, 'value', 'Entered, host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values)
 
-            # Verify that the plugin configuration cache is up to date.
-            MCutils.CachePluginCheck(MCconfig, PluginConfigs)
+            # Ensure the cached configuration is up to date.
+            if MCutils.ReloadPluginConfig(MCconfig, PluginConfigs):
+                PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
+                PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
 
             # PluginConfigs['links'][host][plugin] = config_hash
             if not host in PluginConfigs['links']:
@@ -144,10 +146,8 @@ class ReadValue(object):
 
     def _bad_key(self, MCconfig, host, plugin, mgid, key, values, PluginConfigs, bad_key):
 
-        cache_file = open(MCconfig['PluginDir'] + '/config/.last_updated', 'r')
-        last_cache_update = os.fstat(cache_file.fileno())[ST_CTIME]
-        cache_file.close()
+        last_cache_update = os.stat(MCconfig['PluginDir'] + '/config/.last_updated')
 
-        MCutils.Logger(MCconfig, 2, 'value', bad_key + ', host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values + ', cache_time=' + str(PluginConfigs['Timestamp']) + ', config_time=' + str(last_cache_update) + '.')
+        MCutils.Logger(MCconfig, 2, 'value', bad_key + ', host=' + host + ', plugin=' + plugin + ', mgid=' + mgid + ', key=' + key + ', values=' + values + ', cache_time=' + str(PluginConfigs['Timestamp']) + ', config_time=' + str(last_cache_update.st_mtime) + '.')
         return Response('munin-collector-value: ' + bad_key + '.\n')
 

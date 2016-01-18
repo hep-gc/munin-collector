@@ -1,7 +1,0 @@
-#
-# cron-job to reset collectors time ranges.
-#
-
-MAILTO=
-
-4 * * * *     root test -x /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-time-ranges && /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-time-ranges

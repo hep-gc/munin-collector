@@ -11,7 +11,6 @@ import os
 import glob
 import time
 import cPickle
-#import re
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
@@ -174,38 +173,28 @@ def main():
         'Options': Options,
         }
 
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Starting munin-collector-time-ranges.')
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Configuration:')
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   AllowedDomains : ' + str(MCconfig['AllowedDomains']))
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   DataDir        : ' + MCconfig['DataDir'])
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   HostAllowed    : ' + str(MCconfig['HostAllowed']))
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   ImageDir       : ' + MCconfig['ImageDir'])
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   LockDir        : ' + MCconfig['LockDir'])
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   LogLevel       : ' + str(MCconfig['LogLevel']))
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   Options        : ' + str(MCconfig['Options']))
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', '   PluginDir      : ' + MCconfig['PluginDir'])
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', 'Starting munin-collector-time-ranges.')
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', 'Configuration:')
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   AllowedDomains : ' + str(MCconfig['AllowedDomains']))
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   DataDir        : ' + MCconfig['DataDir'])
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   HostAllowed    : ' + str(MCconfig['HostAllowed']))
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   ImageDir       : ' + MCconfig['ImageDir'])
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   LockDir        : ' + MCconfig['LockDir'])
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   LogLevel       : ' + str(MCconfig['LogLevel']))
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   Options        : ' + str(MCconfig['Options']))
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', '   PluginDir      : ' + MCconfig['PluginDir'])
 
     # Initialize plugin configuration cache.
-    PluginConfigs = {
-        'config': {},
-        'datasource': {},
-        'hostdomains': {},
-        'links': {},
-        'resolved': {},
-        'DomainTree': {},
-        'PluginTree': {},
-        'DomainXref': [],
-        'HostXref': [],
-        'PluginXref': [],
-        'MgidXref': [],
+    PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
+    PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+
+    # Initialize statistics activity cache.
+    StatisticsActivity = {
         'TimeRanges': {},
         'Timestamp': 0,
-        'Timestamps': { 's1': [], 's2': [] },
         }
 
-    MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
-
-    MCutils.Logger(MCconfig, 4, 'TimeRanges', 'Retrieving  round-robin database time ranges.')
+    MCutils.Logger(MCconfig, 4, 'StatisticsActivity', 'Retrieving  round-robin database time ranges.')
     for domain in PluginConfigs['DomainTree'].keys():
         for host in PluginConfigs['DomainTree'][domain].keys():
             for plugin in PluginConfigs['DomainTree'][domain][host].keys():
@@ -221,21 +210,17 @@ def main():
                             if stderr == '':
                                 first_int = MCutils.StrToInt(first)
                                 last_int = MCutils.StrToInt(last)
-                                if PluginConfigs['TimeRanges'].has_key(host + '-' + mgid):
-                                    if first_int < PluginConfigs['TimeRanges'][host + '-' + mgid][0]:
-                                        PluginConfigs['TimeRanges'][host + '-' + mgid][0] = first_int
+                                if StatisticsActivity['TimeRanges'].has_key(host + '-' + mgid):
+                                    if first_int < StatisticsActivity['TimeRanges'][host + '-' + mgid][0]:
+                                        StatisticsActivity['TimeRanges'][host + '-' + mgid][0] = first_int
 
-                                    if last_int > PluginConfigs['TimeRanges'][host + '-' + mgid][1]:
-                                        PluginConfigs['TimeRanges'][host + '-' + mgid][1] = last_int
+                                    if last_int > StatisticsActivity['TimeRanges'][host + '-' + mgid][1]:
+                                        StatisticsActivity['TimeRanges'][host + '-' + mgid][1] = last_int
                                 else:
-                                    PluginConfigs['TimeRanges'][host + '-' + mgid] = [ first_int, last_int ]
+                                    StatisticsActivity['TimeRanges'][host + '-' + mgid] = [ first_int, last_int ]
 
-    cPickle.dump(PluginConfigs['TimeRanges'], open(MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), 'wb'))
-    p = Popen(['mv', MCconfig['PluginDir'] + '/pickles/' + str(os.getpid()), MCconfig['PluginDir'] + '/pickles/TimeRanges'], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = p.communicate()
-    if stderr != '':
-        MCutils.Logger(MCconfig, 2, 'TimeRanges', 'Error creating pickle: ' + stdout)
+    cPickle.dump( StatisticsActivity, open( PluginDir + '/pickles/StatisticsActivity', "wb" ) )
 
-    MCutils.Logger(MCconfig, 3, 'TimeRanges', 'Completed, munin-collector-time-ranges.')
+    MCutils.Logger(MCconfig, 3, 'StatisticsActivity', 'Completed, munin-collector-time-ranges.')
 
 main()

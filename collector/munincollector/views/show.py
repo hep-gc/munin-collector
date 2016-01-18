@@ -301,6 +301,17 @@ class DisplayMetrics(object):
         Params = self.request.params
         MCconfig = self.request.registry.settings['MCconfig']
         PluginConfigs = self.request.registry.settings['PluginConfigs']
+        StatisticsActivity = self.request.registry.settings['StatisticsActivity']
+
+        # Ensure the plugin configuration cache is up to date.
+        if MCutils.ReloadPluginConfig(MCconfig, PluginConfigs):
+            PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
+            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+
+        # Ensure the statistics activity cache is up to date.
+        if MCutils.ReloadStatisticsActivity(MCconfig, StatisticsActivity):
+            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/TimeRanges', "rb" ) )
+            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/TimeRanges')
 
         # Set processing defaults.
         Now = time.time()
@@ -492,16 +503,6 @@ class DisplayMetrics(object):
 
         # Otherwise, scan selections array to generate selected graphs.
         if Options['tf']['value'] == 'Y':
-            # Ensure time ranges are up to date.
-            time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
-            time_ranges_updated = int(os.fstat(time_ranges.fileno())[ST_CTIME])
-
-            if time_ranges_updated > PluginConfigs['TimeRangesUpdated']:
-                PluginConfigs['TimeRanges'] = cPickle.load(time_ranges)
-                PluginConfigs['TimeRangesUpdated'] = time_ranges_updated
-
-            time_ranges.close()
-
             PrunedDomains = {}
             PrunedPlugins = {}
             end_time = int(Options['ta']['value'] + Options['tr']['value'])
@@ -509,9 +510,9 @@ class DisplayMetrics(object):
                 for host in sorted(PluginConfigs['DomainTree'][domain].keys()):
                     for plugin in sorted(PluginConfigs['DomainTree'][domain][host].keys()):
                         for mgid in sorted(PluginConfigs['DomainTree'][domain][host][plugin]):
-                            if PluginConfigs['TimeRanges'].has_key(host + '-' + mgid):
-                                if (Options['ta']['value'] >= PluginConfigs['TimeRanges'][host + '-' + mgid][0] and \
-                                    end_time <= PluginConfigs['TimeRanges'][host + '-' + mgid][1]):
+                            if StatisticsActivity['TimeRanges'].has_key(host + '-' + mgid):
+                                if (Options['ta']['value'] >= StatisticsActivity['TimeRanges'][host + '-' + mgid][0] and \
+                                    end_time <= StatisticsActivity['TimeRanges'][host + '-' + mgid][1]):
 
                                     if not PrunedDomains.has_key(domain):
                                         PrunedDomains[domain] = {}
@@ -538,7 +539,7 @@ class DisplayMetrics(object):
                                         PrunedPlugins[plugin][mgid][domain] += [host]
 
             # Verify that the plugin configuration cache is up to date.
-            MCutils.CachePluginCheck(MCconfig, PluginConfigs)
+            MCutils.ReloadPluginConfig(MCconfig, PluginConfigs)
 
             if CheckedBoxes[0] == 'p':
                 for plugin in sorted(PrunedPlugins.keys()):

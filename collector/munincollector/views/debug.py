@@ -4,6 +4,7 @@ import os
 import re
 import lockfile
 import MCutils
+import cPickle
 
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
@@ -15,6 +16,17 @@ class ShowValues(object):
         MCconfig = self.request.registry.settings['MCconfig']
         Params = self.request.params
         PluginConfigs = self.request.registry.settings['PluginConfigs']
+        StatisticsActivity = self.request.registry.settings['StatisticsActivity']
+
+        # ensure the plugin configuration cache is up to date.
+        if MCutils.ReloadPluginConfig(MCconfig, PluginConfigs):
+            PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
+            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+
+        # ensure the statistics activity cache is up to date.
+        if MCutils.ReloadStatisticsActivity(MCconfig, StatisticsActivity):
+            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/TimeRanges', "rb" ) )
+            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/TimeRanges')
 
         # Format the plugin links: {host: {plugin: hash, ... }, ... }
         PL = '<br/><br/>PluginConfigs[\'links\']:'
@@ -143,14 +155,13 @@ class ShowValues(object):
             ix += 1
 
         # Format time ranges
-#       TR = '<br/><br/>TimeRanges:' + str(PluginConfigs['TimeRanges'])
         TR = '<br/><br/>TimeRanges:'
-        for tr in sorted(PluginConfigs['TimeRanges'].keys()):
+        for tr in sorted(StatisticsActivity['TimeRanges'].keys()):
             TR += '<br/>' + \
                   '&nbsp&nbsp&nbsp&nbsp' + \
-                  '%12d' % PluginConfigs['TimeRanges'][tr][0] + \
+                  '%12d' % StatisticsActivity['TimeRanges'][tr][0] + \
                   '&nbsp' + \
-                  '%12d' % PluginConfigs['TimeRanges'][tr][1] + \
+                  '%12d' % StatisticsActivity['TimeRanges'][tr][1] + \
                   '&nbsp' + \
                   tr
 

@@ -1,0 +1,7 @@
+#
+# cron-job to reset collectors time ranges.
+#
+
+MAILTO=
+
+* * * * *     root test -x /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-plugin-configs && /opt/PyramidContainers/VirtualEnvironment-Python-2.6/Munin-Collector/munincollector/utilities/munin-collector-pickle-plugin-configs

@@ -182,34 +182,18 @@ def main(global_config, **settings):
     MCutils.Logger(MCconfig, 3, '__init__', '   PluginDir      : ' + MCconfig['PluginDir'])
 
     # Initialize plugin configuration cache.
-    time_ranges = open(MCconfig['PluginDir'] + '/pickles/TimeRanges', 'rb')
-    time_ranges_updated = int(os.fstat(time_ranges.fileno())[ST_CTIME])
+    PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
+    PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
 
-    PluginConfigs = {
-        'config': {},
-        'datasource': {},
-        'links': {},
-        'resolved': {},
-        'DomainTree': {},
-        'PluginTree': {},
-        'DomainXref': [],
-        'HostXref': [],
-        'PluginXref': [],
-        'MgidXref': [],
-        'TimeRanges': cPickle.load(time_ranges),
-        'TimeRangesUpdated': time_ranges_updated,
-        'Timestamp': 0,
-        'Timestamps': { 's1': [], 's2': [] },
-        }
-
-    time_ranges.close()
-
-    MCutils.CachePluginConfigs(MCconfig, PluginConfigs)
+    # Initialize statistics activity cache.
+    StatisticsActivity = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/StatisticsActivity', "rb" ) )
+    StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/StatisticsActivity')
 
     config = Configurator(root_factory=Root, settings=settings)
     config.include('pyramid_chameleon')
     config.add_settings({'MCconfig': MCconfig})
     config.add_settings({'PluginConfigs': PluginConfigs})
+    config.add_settings({'StatisticsActivity': StatisticsActivity})
     config.add_view('munincollector.views.alive.Check', name='alive')
     config.add_view('munincollector.views.config.ReadConfig', name='config')
     config.add_view('munincollector.views.debug.ShowValues', name='debug')
