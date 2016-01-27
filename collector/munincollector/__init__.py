@@ -183,11 +183,11 @@ def main(global_config, **settings):
 
     # Initialize plugin configuration cache.
     PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
-    PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+    PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs').st_mtime
 
     # Initialize statistics activity cache.
     StatisticsActivity = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/StatisticsActivity', "rb" ) )
-    StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/StatisticsActivity')
+    StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/StatisticsActivity').st_mtime
 
     config = Configurator(root_factory=Root, settings=settings)
     config.include('pyramid_chameleon')

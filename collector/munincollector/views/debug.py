@@ -2,6 +2,7 @@ from pyramid.response import Response
 from subprocess import PIPE, Popen, STDOUT
 import os
 import re
+import time
 import lockfile
 import MCutils
 import cPickle
@@ -21,12 +22,12 @@ class ShowValues(object):
         # ensure the plugin configuration cache is up to date.
         if MCutils.ReloadPluginConfig(MCconfig, PluginConfigs):
             PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
-            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs').st_mtime
 
         # ensure the statistics activity cache is up to date.
         if MCutils.ReloadStatisticsActivity(MCconfig, StatisticsActivity):
-            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/TimeRanges', "rb" ) )
-            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/TimeRanges')
+            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/StatisticsActivity', "rb" ) )
+            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/StatisticsActivity').st_mtime
 
         # Format the plugin links: {host: {plugin: hash, ... }, ... }
         PL = '<br/><br/>PluginConfigs[\'links\']:'
@@ -165,5 +166,14 @@ class ShowValues(object):
                   '&nbsp' + \
                   tr
 
-        return Response(PL + PC + DT + PT + S1 + S2 + DX + HX + PX + MX + TR + '\n')
+        # Format timestamps
+        current_time = int(time.time())
+        plugin_config_time = int(PluginConfigs['Timestamp']) - current_time
+        statistics_activity_time = int(StatisticsActivity['Timestamp']) - current_time
+        TS = '<br/><br/>Timestamps: ' + \
+             '%12d' % current_time + ', ' + \
+             '%12d' % plugin_config_time + ', ' + \
+             '%12d' % statistics_activity_time
+
+        return Response(PL + PC + DT + PT + S1 + S2 + DX + HX + PX + MX + TR + TS + '\n')
 

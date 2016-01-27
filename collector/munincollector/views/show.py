@@ -306,12 +306,12 @@ class DisplayMetrics(object):
         # Ensure the plugin configuration cache is up to date.
         if MCutils.ReloadPluginConfig(MCconfig, PluginConfigs):
             PluginConfigs = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/PluginConfigs', "rb" ) )
-            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs')
+            PluginConfigs['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/PluginConfigs').st_mtime
 
         # Ensure the statistics activity cache is up to date.
         if MCutils.ReloadStatisticsActivity(MCconfig, StatisticsActivity):
-            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/TimeRanges', "rb" ) )
-            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/TimeRanges')
+            StatisticsActivity['TimeRanges'] = cPickle.load( open( MCconfig['PluginDir'] + '/pickles/StatisticsActivity', "rb" ) )
+            StatisticsActivity['Timestamp'] = os.stat(MCconfig['PluginDir'] + '/pickles/StatisticsActivity').st_mtime
 
         # Set processing defaults.
         Now = time.time()
