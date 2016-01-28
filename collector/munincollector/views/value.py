@@ -5,6 +5,8 @@ import re
 from stat import *
 import MCutils
 
+import cPickle
+
 os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
 class ReadValue(object):
