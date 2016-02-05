@@ -1,0 +1,36 @@
+#!/usr/bin/perl 
+    $Config{'LogLevel'} = 3;
+    @LogLevels = ('None', 'Error', 'Warning', 'Info', 'Debug');
+
+    $ENV{'PATH'} = '/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin';
+
+    Logger(3, "Starting."); 
+
+    # Ensure only one munin-node-multi-reporter task running.
+    @x = `ps --no-headers  -fC munin-node-multi-reporter`;
+    if ($#x > 0) {
+        Logger(2, "There is more than one munin-node-multi-reporter running. This one is terminating.");
+        exit;
+    }
+
+    @configs = `ls /usr/local/etc/munin-node-reporter*`;
+    for $config (@configs) {
+        chop($config);
+        Logger(3,  "Running munin-node-reporter with configuration file = ${config}.");
+        $ENV{'MUNIN_NODE_REPORTER_CONF'} = $config;
+        system('/usr/local/sbin/munin-node-reporter');
+    }
+
+    Logger(3, "Completed."); 
+
+#
+# Write logging messages.
+#
+sub Logger() {
+    my $loglevel = shift() * 1;
+    my $logmsg = shift();
+
+    if ($Config{'LogLevel'} >= $loglevel) {
+        system("logger -t munin-node-multi-reporter -- '[$$] $LogLevels[$loglevel]: $logmsg'");
+    }
+}
