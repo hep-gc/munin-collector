@@ -10,7 +10,7 @@
 	PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 
 	if [ "$1" = "config" ]; then
-		cloud_status -l | sort | awk \
+		cloud_status -l | grep -v 8111 | sort | awk \
 			'BEGIN{ \
 				colourcount = 12; \
 				colours[1,1] = "000000"; \
@@ -90,10 +90,10 @@
 				print "heartbeat.colour ff0000\n"; \
 				}'
 	else
-		cloud_status -m | awk \
+		cloud_status -m | grep -v 8111 | awk \
 			'BEGIN{ \
 				cloudcount = 0; \
-				while (("cloud_status -l | sort" | getline line)>0) { \
+				while (("cloud_status -l | grep -v 8111 | sort" | getline line)>0) { \
 					split(line, words); \
 					if (words[1]!="") { \
 						cloudcount++; \

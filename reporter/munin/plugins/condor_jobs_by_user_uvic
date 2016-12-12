@@ -4,7 +4,7 @@
 
     @users = split(/[\s\n]+/, $ENV{'MUNIN_JOBSBYUSER_USERS'});
 
-    @clouds = `cloud_status | awk 'NF>0 && !/^Resource/ && !/^NAME/ {print \$1}' | sort`;
+    @clouds = `cloud_status | grep -v 8111 | awk 'NF>0 && !/^Resource/ && !/^NAME/ {print \$1}' | sort`;
     foreach $cloud (@clouds) {
         chop($cloud);
     }
@@ -36,7 +36,7 @@
         }
 
         for ($i=0; $i<3; $i++) {
-            @vms=`cloud_status -m | awk 'NF>5 && !/^ID/ && !/^Total/ && !/8111\.\$/ && !/8111\?\$/ {print \$6 " " \$2}'`;
+            @vms=`cloud_status -m | grep -v 8111 | awk 'NF>5 && !/^ID/ && !/^Total/ && !/8111\.\$/ && !/8111\?\$/ {print \$6 " " \$2}'`;
             last if $#vms > 0;
             system('sleep 30');
         }
