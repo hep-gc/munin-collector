@@ -132,11 +132,11 @@ window.onload = function() {
                                 <img src="${request.static_url('munincollector:static/minus.svg')}" height="12" width="12" id='s${PX.index(plugin)}-minus' onclick="ToggleDisplay('s${PX.index(plugin)}');" hidden />
                                 <input onclick="ToggleChildCBs('${PX.index(plugin)}');" id="${PX.index(plugin)}" type="checkbox" />
                                 ${plugin}
-                                <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid plugin">(${len(PT[plugin][mgid].keys())})</span>
+                                <span tal:condition="len(PT[plugin].keys())<2" tal:define="mgid PT[plugin].keys()[0]">(${len(PT[plugin][mgid].keys())})</span>
                                 <span tal:condition="len(PT[plugin].keys())>1">(${len(PT[plugin].keys())})</span>
 
                                     <div tal:condition="len(PT[plugin].keys())<2">
-                                        <div tal:define="mgid plugin" style="display:none" id="s${PX.index(plugin)}">    
+                                        <div tal:define="mgid PT[plugin].keys()[0]" style="display:none" id="s${PX.index(plugin)}">    
                                             <ul class="links">
                                                 <li tal:repeat="domain (sorted(PT[plugin][mgid].keys()))">
                                                     &nbsp; &nbsp; &nbsp;
